@@ -7,8 +7,10 @@ frames + posed photos (works even when the bundle's own mesh is missing).
   3. color each vertex from the best photo that actually sees it: visibility by
      ray casting against the mesh itself, preference for close, head-on, sharp views
 
-usage: reconstruct_bundle.py <bundle> [--room room.json] [--voxel 0.015] [--faces 400000] [-o outdir]
+usage: reconstruct_bundle.py <bundle> [--room room.json] [--voxel 0.015] [--faces 400000] [--despeckle] [-o outdir]
 
+Android (ARCore) bundles: raw depth is noisier and sparser than LiDAR; use
+--voxel 0.03 --trunc 5 --despeckle.
 Writes <outdir>/scan_world.ply (ARKit world coords) and, with --room (from
 bundle_to_room.py), scan_room.ply + scan_room.glb in room coordinates for the viewer.
 Needs: pip install open3d pillow numpy
@@ -20,7 +22,6 @@ import time
 import zlib
 
 import numpy as np
-import open3d as o3d
 from PIL import Image
 
 ARKIT_TO_CV = np.diag([1.0, -1.0, -1.0, 1.0])  # camera: +y up/-z forward → +y down/+z forward
@@ -28,6 +29,28 @@ ARKIT_TO_CV = np.diag([1.0, -1.0, -1.0, 1.0])  # camera: +y up/-z forward → +y
 
 def mat(cm):
     return np.array(cm, dtype=np.float64).reshape(4, 4).T  # column-major → row-major
+
+
+LIDAR_MIN_SIDE = 192  # iPhone LiDAR depth is 256×192; ARCore raw depth is smaller (e.g. 160×120)
+
+
+def sample_step(h, w):
+    """Pixel stride for the bounds sample: every 16th pixel for LiDAR-sized depth (unchanged), ~40 samples
+    across the short side for smaller (ARCore) depth images."""
+    return 16 if min(h, w) >= LIDAR_MIN_SIDE else max(1, min(h, w) // 40)
+
+
+def despeckle(depth, jump=0.1):
+    """3×3 median of the valid neighbors; drops pixels next to a >10 % depth jump (flying pixels). 0 = invalid."""
+    h, w = depth.shape
+    p = np.pad(depth, 1, mode='edge')
+    stack = np.stack([p[y:y + h, x:x + w] for y in range(3) for x in range(3)])
+    jumpy = ((np.abs(stack - depth) > jump * depth) & (stack > 0)).any(0)
+    stack = np.where(stack > 0, stack, np.nan)
+    stack[4] = depth  # the center is never NaN, so the median below always has a value
+    out = np.nanmedian(stack, axis=0).astype(depth.dtype)
+    out[(depth <= 0) | jumpy] = 0
+    return out
 
 
 def main():
@@ -40,8 +63,11 @@ def main():
     ap.add_argument('--faces', type=int, default=0, help='Open3D quadric simplification target (0 = off: it tears holes in fused meshes; simplify the GLB with gltf-transform instead)')
     ap.add_argument('--max-depth', type=float, default=3.5)
     ap.add_argument('--min-confidence', type=int, default=1)
+    ap.add_argument('--despeckle', action='store_true', help='median-filter depth and drop flying pixels (ARCore raw depth)')
     ap.add_argument('-o', default=None)
     a = ap.parse_args()
+    import open3d as o3d  # imported here so the helpers above work without it (test_android_bundle.py)
+
     out = a.o or os.path.join(a.bundle, 'recon')
     os.makedirs(out, exist_ok=True)
     t0 = time.time()
@@ -60,6 +86,7 @@ def main():
         print(f'loaded existing mesh: {len(mesh.triangles):,} triangles')
     else:
         loaded = []
+        low_res = False
         lo, hi = np.full(3, np.inf), np.full(3, -np.inf)
         for f in frames:
             w, h = f['width'], f['height']
@@ -72,10 +99,14 @@ def main():
                 conf = np.fromfile(conf_path, dtype=np.uint8).reshape(h, w)
                 depth[conf < a.min_confidence] = 0
             depth[(depth > a.max_depth) | ~np.isfinite(depth)] = 0
+            if a.despeckle:
+                depth = despeckle(depth)
             k = np.array(f['intrinsics']).reshape(3, 3).T
             cam_to_world = mat(f['transform']) @ ARKIT_TO_CV
             # bounds from a sparse sample of back-projected points
-            ys, xs = np.mgrid[0:h:16, 0:w:16]
+            low_res |= min(h, w) < LIDAR_MIN_SIDE
+            step = sample_step(h, w)
+            ys, xs = np.mgrid[0:h:step, 0:w:step]
             z = depth[ys, xs].ravel()
             ok = z > 0
             pts = np.c_[(xs.ravel()[ok] - k[0, 2]) * z[ok] / k[0, 0], (ys.ravel()[ok] - k[1, 2]) * z[ok] / k[1, 1], z[ok], np.ones(ok.sum())]
@@ -83,6 +114,8 @@ def main():
                 wp = (cam_to_world @ pts.T).T[:, :3]
                 lo, hi = np.minimum(lo, wp.min(0)), np.maximum(hi, wp.max(0))
             loaded.append((depth, k, np.linalg.inv(cam_to_world)))
+        if low_res or a.despeckle:  # sparse ARCore samples can miss the outermost surfaces; LiDAR runs are unchanged
+            lo, hi = lo - 0.5, hi + 0.5
         tile = 3.5
         res = int(round(tile / a.voxel))
         pad = a.voxel * 3

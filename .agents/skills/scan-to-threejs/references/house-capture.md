@@ -86,6 +86,56 @@ The existing `cmp_photo.sh` renders one pair per requested index; make a contact
 when useful. It crops empty render margins for presentation, so use the uncropped model PNG for
 pixel-coordinate measurements.
 
+## Android bundles
+
+The Android app (`apps/house-capture-android/README.md`) writes the same `house-capture/5` session
+layout. Detect it with `jq .platform manifest.json` → `"android"`. It has photos, depth frames and
+`rooms/room-N.json`, but no `structure.json`, mesh, world map or `rooms/room-N-data.json`. One
+export is one room, always index 0. The app's `room-0.json` is derived from ARCore planes (or, with
+fewer than two usable planes, a box around the camera path): `low`/`medium` confidence walls, an
+approximate ceiling height and empty doors/windows/openings/objects. A room named "Unfinished scan"
+was left before Finish room; its records are a five-second checkpoint and may miss the last
+moments. It converts as-is, but synthesize the layout before modeling:
+
+```sh
+python3 "$S/android_synthesize_room.py" data/captures-in/my-room --from-depth --write-bundle --plan plan.png
+python3 "$S/bundle_to_room.py" data/captures-in/my-room --room 0 -o data/demos/my-room.json
+```
+
+The synthesizer needs NumPy and Pillow (no Open3D). `--room N` is optional when the manifest
+lists one room. `--write-bundle` keeps the app's layout as
+`rooms/room-N.arcore.json` (never overwritten), rewrites `rooms/room-N.json`, adds
+`mesh/room-N.ply` in the iOS vertex/face schema (per-voxel surfels unless the input was a triangle
+mesh), and updates the manifest counts, `mesh`, and `capture.layoutSource`/`synthesized`/
+`synthesizedRooms`. It refuses to synthesize a listed room again without `--force`. Without
+`--write-bundle` it only writes `room-N.json` to `-o` (default `<bundle>/synth/`), leaving the
+bundle untouched. It reads at most `--max-frames` (400) evenly spaced depth frames. For denser
+input, fuse the depth first (Open3D) and pass the triangle mesh:
+
+```sh
+python3 "$S/reconstruct_bundle.py" data/captures-in/my-room --voxel 0.03 --trunc 5 --despeckle -o recon
+python3 "$S/android_synthesize_room.py" data/captures-in/my-room --points recon/scan_world.ply --write-bundle
+```
+
+The default is rectilinear walls; use `--free-walls` for angled rooms and `--no-objects` to skip
+furniture boxes; `--cell` (0.03 m) and `--min-wall` (0.4 m) tune the wall raster. Synthesized
+doors, windows, openings and objects are candidates found from depth evidence: confirm each with
+photos (`photos_for.py`) before modeling it. Windows are found only where depth sees through the
+glass. Raw ARCore depth is sparse on blank walls, glass and mirrors, and ARCore has no loop
+closure, so expect missing or doubled walls on difficult rooms; wall `confidence` reflects how
+much of each edge has depth support. The synthesizer has been tested on a synthetic bundle only.
+Pausing the app mid-scan starts a new recording segment (`segment` on each photo and depth
+record, `capture.segments`, pause/resume in `capture.events`). ARCore may relocalize after a
+resume, so segments might not share a world frame; the scripts use all segments together. If walls
+come out doubled and `capture.segments > 1`, compare segments and drop the misaligned records
+before synthesizing. Each depth frame's `timestamp` and `transform` are those of the camera frame its depth was
+computed for: `arcore.poseSource` is `exact` when that frame was found, or `nearest` (within 50 ms,
+offset in `arcore.poseOffsetMs`). `rgb`/`rgbIntrinsics` are present only when the depth belongs to the
+current camera frame. This pairing is unverified on a device.
+Photos are the largest ARCore CPU image (expected 1920×1080; see `manifest.capture.cameraConfig`)
+with EXIF 6 and the same upright rule as iOS. Depth frames carry an extra `arcore` object with the
+raw texture intrinsics; the scripts ignore it.
+
 ## Older exports
 
 The bundle converter reads RoomPlan geometry and photo metadata shared by earlier exports.

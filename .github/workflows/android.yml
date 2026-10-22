@@ -1,0 +1,36 @@
+name: Build Android app
+on:
+  push:
+    paths: ['apps/house-capture-android/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['apps/house-capture-android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/house-capture-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: house-capture-android-debug
+          path: apps/house-capture-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: house-capture-android-test-reports
+          path: apps/house-capture-android/app/build/reports/tests/
+          if-no-files-found: ignore

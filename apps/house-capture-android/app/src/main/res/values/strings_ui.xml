@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Strings for the Compose UI (ui/**, MainActivity). app_name lives in strings.xml. -->
+<resources>
+    <string name="app_title">3D Model Anything</string>
+    <string name="home_eyebrow">Room library</string>
+    <string name="home_empty_title">Every room starts here.</string>
+    <string name="home_empty_body">Scan a room to save its photos, depth and camera path. Walls, doors, windows and furniture are worked out afterwards on a computer from the shared .zip.</string>
+    <string name="scan_a_room">Scan a room</string>
+    <string name="name_title">Which room are you in?</string>
+    <string name="room_name">Room name</string>
+    <string name="start_scan">Start scan</string>
+    <string name="room_n">Room %1$d</string>
+    <string-array name="room_name_suggestions">
+        <item>Living room</item>
+        <item>Kitchen</item>
+        <item>Dining room</item>
+        <item>Hallway</item>
+        <item>Bedroom</item>
+        <item>Bathroom</item>
+        <item>Office</item>
+    </string-array>
+    <string name="room_counts">%1$d photos · %2$d depth · %3$d walls</string>
+    <string name="delete">Delete</string>
+    <string name="delete_room">Delete %1$s</string>
+    <string name="delete_title">Delete %1$s?</string>
+    <string name="delete_body">Its photos, depth and room files are deleted from this phone. This cannot be undone.</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="camera_title">Camera access needed</string>
+    <string name="camera_body">Scanning uses the camera to track the phone and take photos. Nothing leaves the phone unless you share a room.</string>
+    <string name="open_settings">Open settings</string>
+
+    <string name="back">Back</string>
+    <string name="photo_detail_percent">%1$d%% photo detail</string>
+    <string name="depth_unavailable">No depth on this phone: photos and camera path only.</string>
+    <string name="depth_none_yet">No depth frames yet</string>
+    <string name="depth_stalled">No new depth for over 5 s</string>
+    <string name="status_starting">Starting…</string>
+    <string name="status_tracking">Tracking</string>
+    <string name="status_limited">Tracking limited</string>
+    <string name="status_lost">Tracking lost</string>
+    <string name="counter_photos">Photos</string>
+    <string name="counter_depth">Depth</string>
+    <string name="counter_coverage">Detail</string>
+    <string name="take_photo">Take photo</string>
+    <string name="finish_room">Finish room</string>
+    <string name="saving_room">Saving room…</string>
+    <string name="scan_failed_title">Couldn\'t scan</string>
+    <string name="scan_failed">The camera session stopped.</string>
+    <string name="leave_title">Stop scanning?</string>
+    <string name="leave_body">Finish room saves what you have scanned so far. Leave stops recording without finishing the room.</string>
+    <string name="leave_discard">Leave</string>
+    <string name="keep_scanning">Keep scanning</string>
+    <string name="plan_empty">The plan appears once depth arrives</string>
+    <string name="plan_legend">Grey: seen by depth. Green: good photo coverage. Thick blue: walls ARCore found. Line: your path. Pink: photos. Orange: you.</string>
+    <string name="plan_no_walls">No walls or photos to draw</string>
+    <string name="room_plan_title">Room plan</string>
+    <string name="room_plan_legend">Walls from ARCore planes, with their lengths (faded: low confidence). Pink: photo positions. An estimate until android_synthesize_room.py rebuilds it from depth.</string>
+    <string name="room_plan_legend_synth">Walls synthesized from depth, with their lengths (faded: low confidence). Pink: photo positions.</string>
+    <string name="coverage_plan_title">Coverage while scanning</string>
+    <string name="verdict_no_warnings">Photos, depth, coverage and walls all look fine.</string>
+    <string name="next_title">What next</string>
+    <string name="next_share">Share the .zip to your computer (button above).</string>
+    <string name="next_synthesize">Extract it into data/captures-in/&lt;room&gt;/ and run android_synthesize_room.py to build walls, openings and objects from the depth.</string>
+    <string name="next_skill">Run the scan-to-threejs skill on the bundle to turn it into a Three.js room.</string>
+
+    <string name="fact_photos">Photos</string>
+    <string name="fact_depth">Depth frames</string>
+    <string name="fact_walls">Walls (from ARCore planes)</string>
+    <string name="fact_walls_synth">Walls (from depth)</string>
+    <string name="fact_scan_time">Scan time</string>
+    <string name="fact_tracking_lost">Tracking lost</string>
+    <string name="fact_room_size">Room size (W × D)</string>
+    <string name="not_supported">Not supported</string>
+    <string name="depth_stats">Depth attempts: %1$s</string>
+    <string name="fact_photo_detail">Photo detail</string>
+    <string name="fact_size">Size</string>
+    <string name="fact_folder">Folder</string>
+    <string name="percent">%1$d%%</string>
+    <string name="not_measured">Not measured</string>
+    <string name="share_room">Share room (.zip)</string>
+    <string name="preparing_zip">Preparing .zip…</string>
+    <string name="share_failed">Couldn\'t share: %1$s</string>
+    <string name="done">Done</string>
+    <string name="room_missing">This room is no longer on the phone.</string>
+</resources>

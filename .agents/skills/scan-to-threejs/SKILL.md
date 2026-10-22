@@ -1,6 +1,6 @@
 ---
 name: scan-to-threejs
-description: Rebuild editable Three.js rooms from 3D Model Anything iPhone exports, RoomPlan JSON, or GLB/glTF scans. Use for scan-based reconstruction and photo-guided refinement of modeled spaces.
+description: Rebuild editable Three.js rooms from 3D Model Anything iPhone or Android exports, RoomPlan JSON, or GLB/glTF scans. Use for scan-based reconstruction and photo-guided refinement of modeled spaces.
 ---
 
 # Scan to Three.js

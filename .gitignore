@@ -15,3 +15,10 @@ data/scans/
 apps/house-capture/release/screenshots/
 
 HouseCapture.xcodeproj/
+.gradle/
+.kotlin/
+*.iml
+.idea/
+local.properties
+captures/
+apps/house-capture-android/app/release/

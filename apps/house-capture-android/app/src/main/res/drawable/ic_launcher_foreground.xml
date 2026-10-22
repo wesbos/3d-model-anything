@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A room in plan with a door gap, drawn in ink, with the scanner's orange view cone. 108dp canvas, 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M44,72 L34,72 L34,36 L74,36 L74,72 L60,72"
+        android:strokeWidth="4"
+        android:strokeColor="@color/ink"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="@color/orange"
+        android:pathData="M54,60 L44,44 L64,44 Z" />
+    <path
+        android:fillColor="@color/ink"
+        android:pathData="M54,60 m-4,0 a4,4 0,1 1,8 0 a4,4 0,1 1,-8 0" />
+</vector>

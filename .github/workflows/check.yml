@@ -17,5 +17,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install Pillow
+      - run: pip install Pillow numpy
       - run: python3 .agents/skills/scan-to-threejs/scripts/test_house_import.py
+      - run: python3 .agents/skills/scan-to-threejs/scripts/test_android_bundle.py
