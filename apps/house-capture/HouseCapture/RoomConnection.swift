@@ -6,14 +6,34 @@ struct RoomDoor: Identifiable {
   let width: Float
   let transform: simd_float4x4
   static func load(house: HouseProject, room: HouseProject.Room) -> [RoomDoor] {
-    guard let ref = room.active, let session = house.session(ref.session),
-          let data = try? Data(contentsOf: house.bundle(for: session).file("rooms/room-\(ref.index).json")),
-          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
-    return (["doors", "openings"].flatMap { json[$0] as? [[String: Any]] ?? [] }).compactMap { d in
-      guard let t = d["transform"] as? [Float], t.count == 16,
-            let dimensions = d["dimensions"] as? [Float], let width = dimensions.first,
+    RoomJSON.load(house: house, room: room).map(parse) ?? []
+  }
+  static func parse(_ json: [String: Any]) -> [RoomDoor] {
+    (["doors", "openings"].flatMap { json[$0] as? [[String: Any]] ?? [] }).compactMap { d in
+      guard let t = RoomJSON.floats(d["transform"]), t.count == 16,
+            let width = RoomJSON.floats(d["dimensions"])?.first,
             let id = d["identifier"] as? String else { return nil }
       return .init(id: id, width: width, transform: simd_float4x4(columnMajor: t))
+    }
+  }
+}
+
+/// RoomPlan's saved CapturedRoom JSON, read untyped for the doorway tools.
+enum RoomJSON {
+  static func load(house: HouseProject, room: HouseProject.Room) -> [String: Any]? {
+    guard let ref = room.active, let session = house.session(ref.session),
+          let data = try? Data(contentsOf: house.bundle(for: session).file("rooms/room-\(ref.index).json")) else { return nil }
+    return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+  }
+  /// JSONSerialization numbers are NSNumbers holding Doubles, and `as? [Float]` rejects any
+  /// value a Float can't hold exactly (-0.7317813 included), so read NSNumber and narrow.
+  static func floats(_ value: Any?) -> [Float]? { (value as? [NSNumber])?.map(\.floatValue) }
+  /// Wall centre lines on the floor plane (x, z)
+  static func wallSegments(_ json: [String: Any]) -> [(SIMD2<Float>, SIMD2<Float>)] {
+    (json["walls"] as? [[String: Any]] ?? []).compactMap { w in
+      guard let t = floats(w["transform"]), t.count == 16, let width = floats(w["dimensions"])?.first else { return nil }
+      let center = SIMD2(t[12], t[14]), half = SIMD2(t[0], t[2]) * width / 2
+      return (center-half, center+half)
     }
   }
 }
@@ -108,14 +128,7 @@ private struct DoorwayMap: View {
   let doors: [RoomDoor]
   @Binding var selected: String
   private var segments: [(SIMD2<Float>, SIMD2<Float>)] {
-    guard let ref = room.active, let session = house.session(ref.session),
-          let data = try? Data(contentsOf: house.bundle(for: session).file("rooms/room-\(ref.index).json")),
-          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let walls = json["walls"] as? [[String: Any]] else { return [] }
-    return walls.compactMap { w in
-      guard let t = w["transform"] as? [Float], t.count == 16, let d = w["dimensions"] as? [Float], let width = d.first else { return nil }
-      let center = SIMD2(t[12], t[14]), half = SIMD2(t[0], t[2]) * width / 2
-      return (center-half, center+half)
-    }
+    RoomJSON.load(house: house, room: room).map(RoomJSON.wallSegments) ?? []
   }
   var body: some View {
     let lines = segments
