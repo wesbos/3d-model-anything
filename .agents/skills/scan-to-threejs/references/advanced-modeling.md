@@ -26,7 +26,7 @@ Use one coordinate frame for the whole house. Within one session it is shared. F
 GLBs, align each room to its neighbor through the shared doorway (same opening, matching jamb
 positions) before modeling. Put each room in its own module (`demos/<name>/`) implementing
 `RoomModule` (build → group, lights, walls for cutaway, walkable(), camera defaults, reference
-layer, photos), register it in `demos/index.ts`, and the viewer/capture page pick it up
+layer, photos), register it in `demos/index.ts`, and the viewer/capture page picks it up
 (`?room=<id>`). Several scans of the same room from one session start usually land in nearly the
 same frame: compare their desk/table centers, and borrow furniture boxes RoomPlan found in one
 scan but not another.
