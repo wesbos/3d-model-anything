@@ -75,7 +75,7 @@ first area). Photo `transform` is camera-to-world (camera looks down −Z); JPEG
 landscape sensor image and `intrinsics` (fx, fy, cx, cy) match them — ignore EXIF when projecting.
 RoomPlan surface/object `transform`s are centered on the element; `dimensions` = width × height × depth.
 
-`diagnostics.json` is checkpointed every five seconds during capture, including an unfinished room.
+`diagnostics.json` is checkpointed every five seconds during capture, including for an unfinished room.
 It records bounded memory/thermal/frame-age samples, feature and mesh counts, configuration changes,
 memory warnings, interruptions, and structured RoomPlan/ARKit/high-resolution-photo error chains
 (domain, code, failure reason and recovery suggestion). ARKit errors are observed through the existing
