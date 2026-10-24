@@ -78,10 +78,23 @@ final class SelfTest {
     expect(h.rooms.first { $0.id == original.id }?.active?.index == 0 && h.deletedRooms.count == 1, "deleting active version restores previous version and remains recoverable")
   }
 
+  /// Synthetic room in RoomPlan's CapturedRoom JSON shape. JSONSerialization hands back Doubles,
+  /// which `as? [Float]` rejected, so no doorway or wall parsed from a real scan.
+  private func roomJSONParsing() throws {
+    let text = #"{"walls":[{"identifier":"W1","dimensions":[2.0517492,2.1642938,0],"transform":[-0.7317814,0,0.6815395,0,0,0.99999994,0,0,-0.6815394,0,-0.73178136,0,1.4212801,-0.18055037,1.7806723,0.99999994]},{"identifier":"W2","dimensions":[3.25,2.1642938,0],"transform":[0.6815394,0,0.7317813,0,0,0.99999994,0,0,-0.7317813,0,0.6815394,0,-0.4,-0.18055037,0.9,0.99999994]}],"doors":[{"identifier":"D1","parentIdentifier":"W1","category":{"door":{"isOpen":false}},"dimensions":[0.7094916,1.9848472,0],"transform":[-0.7317813,0,0.6815394,0,0,0.99999994,0,0,-0.6815394,0,-0.7317813,0,1.0342455,-0.27027357,2.1411343,0.99999994]}],"openings":[{"identifier":"O1","category":{"opening":{}},"dimensions":[1.0505707,1.9399999,0],"transform":[0.759975,0,-0.6499523,0,0,0.99999994,0,0,0.64995235,0,0.759975,0,-2.0957692,-0.2926972,-2.6524177,0.99999994]}]}"#
+    let json = try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any] ?? [:]
+    let doors = RoomDoor.parse(json)
+    expect(doors.map(\.id) == ["D1", "O1"], "room JSON doors and openings parse from JSONSerialization doubles (\(doors.count)/2)")
+    expect(abs((doors.first?.width ?? 0) - 0.7094916) < 1e-5 && abs((doors.first?.transform.columns.3.z ?? 0) - 2.1411343) < 1e-5, "door width and position survive the Float narrowing")
+    let walls = RoomJSON.wallSegments(json)
+    expect(walls.count == 2, "room JSON walls parse for the doorway plan (\(walls.count)/2)")
+  }
+
   func run() async -> Bool {
     var houseID: String?
     do {
       try await coveragePerformance()
+      try roomJSONParsing()
       trackingRecovery()
       try roomExperience()
       try captureDiagnostics()
