@@ -11,7 +11,11 @@ rebuild pipeline (`scan-to-threejs` skill) can use directly. Per room it records
 
 Requires an iPhone or iPad **with LiDAR** running iOS 17+.
 
-## Build
+## Download
+
+[Download free on the App Store](https://apps.apple.com/app/3d-model-anything/id6825843398). Scanning requires LiDAR; devices without LiDAR can import, view and share existing scans. You only need Xcode if you want to build from source.
+
+## Build from source
 
 ```sh
 cd apps/house-capture

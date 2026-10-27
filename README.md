@@ -4,7 +4,7 @@
 
 Capture a room on an iPhone, then use its geometry and photographs to build an editable Three.js scene with an AI coding agent.
 
-[Open the office viewer](https://wesbos.github.io/3d-model-anything/) · [App support](https://wesbos.github.io/3d-model-anything/support.html)
+[Download the free iPhone app](https://apps.apple.com/app/3d-model-anything/id6825843398) · [Open the office viewer](https://wesbos.github.io/3d-model-anything/) · [App support](https://wesbos.github.io/3d-model-anything/support.html)
 
 This repository includes the **3D Model Anything iPhone app**, a **Three.js viewer**, the **scan-to-threejs agent skill**, and **Wes’s detailed office demo**.
 
@@ -30,9 +30,9 @@ The demo includes the reconstructed office and selected textures. Original scans
 
 ## Capture your own space
 
-See [the iPhone app](apps/house-capture/README.md) for building with Xcode, device requirements, scanning and sharing. Scanning needs a LiDAR-equipped iPhone or iPad. Non-LiDAR devices can import and review scans.
+[Get 3D Model Anything free on the App Store](https://apps.apple.com/app/3d-model-anything/id6825843398). Scanning requires a LiDAR-equipped iPhone Pro or iPad Pro running iOS/iPadOS 17 or later. Devices without LiDAR can import, view and share existing scans.
 
-The app is source-available here; an App Store release is a separate distribution step. Do not assume an App Store download is available yet.
+See [the iPhone app guide](apps/house-capture/README.md) for scanning, sharing and optionally building from source with Xcode.
 
 Export a room or session through the system share sheet and extract it into an ignored `data/captures-in/<room>/` directory. Exports keep the existing `house-capture/5` contract; changing the app name does not change the files.
 

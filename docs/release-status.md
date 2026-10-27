@@ -16,7 +16,9 @@ Validated locally:
 
 The app's display name is **3D Model Anything**. `house-capture/5`, existing serialized keys, the Xcode target and `com.wesbos.housecapture` bundle identifier remain unchanged for compatibility. Contributors select their own signing team in Xcode.
 
-Source publication does not submit the app to Apple. Before TestFlight/App Store release:
+Version 1.0 is [live on the App Store](https://apps.apple.com/app/3d-model-anything/id6825843398), available free. Public availability was verified on October 27, 2026.
+
+For future TestFlight/App Store releases:
 - Verify the configured public privacy/support URLs and GitHub Issues support link.
 - Complete store pricing and reviewer contact details.
 - Configure distribution signing and App Store Connect.

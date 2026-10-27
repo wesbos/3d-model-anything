@@ -100,6 +100,7 @@ struct CaptureScreen: View {
           .frame(width: 44, height: 44)
           .background(.ultraThinMaterial, in: Circle())
       }
+      .accessibilityLabel("Close capture")
       Spacer()
       VStack(alignment: .trailing, spacing: 6) {
         HStack(spacing: 10) {
@@ -172,7 +173,7 @@ struct CaptureScreen: View {
       if controller.sessionNeedsRestart {
         panel {
           Label("Scan ended", systemImage: "exclamationmark.triangle.fill").font(.headline)
-          Text("The phone lost its position. The available room data has been saved. Finish this session, then start a new capture from the house screen.")
+          Text("The device lost its position. The available room data has been saved. Finish this session, then start a new capture from the house screen.")
             .font(.subheadline)
           roomList
           Button("Finish and keep saved rooms") { Task { await controller.finishSession() } }
@@ -261,7 +262,7 @@ struct CaptureScreen: View {
       }
       Toggle("High-resolution automatic photos", isOn: $controller.highResolutionPhotos)
         .font(.subheadline)
-      Text("Regular photos use camera frames for a lighter scan. High-resolution photos add processing and are limited to one request every 3 seconds while the phone is cool. The shutter always saves a regular photo.")
+      Text("Regular photos use camera frames for a lighter scan. High-resolution photos add processing and are limited to one request every 3 seconds while the device is cool. The shutter always saves a regular photo.")
         .font(.caption).foregroundStyle(.secondary)
       Button {
         controller.startRoom()
@@ -338,6 +339,7 @@ struct CaptureScreen: View {
           Image(systemName: "pause.fill")
         }
         .buttonStyle(.bordered)
+        .accessibilityLabel("Pause scanning")
         shutter
         Button(controller.quality.ready ? "Finish room ✓" : "Save room", action: controller.finishRoom)
           .buttonStyle(.borderedProminent)
@@ -488,9 +490,9 @@ private struct RelocalizationPanel: View {
   private var message: String {
     switch r.stage {
     case .loadingMap: "Reading the saved map."
-    case .searching: "Point at an area you already scanned and move slowly. When the phone recognizes it, your earlier scan appears in green."
+    case .searching: "Point at an area you already scanned and move slowly. When the device recognizes it, your earlier scan appears in green."
     case .checking: "Hold on the area you scanned before. The green should sit right on the walls and furniture."
-    case .mismatch: "The phone thinks it knows this place, but the green doesn't sit on the real surfaces. Try again from a spot with lots of detail, or start unaligned."
+    case .mismatch: "The device thinks it knows this place, but the green doesn't sit on the real surfaces. Try again from a spot with lots of detail, or start unaligned."
     case .done: ""
     case .failed(let m): m + " You can still scan: the session gets its own frame. Use Connect room afterward to align it with another room."
     }

@@ -1,0 +1,69 @@
+3D Model Anything — App Store readiness review, 2026-10-22
+
+Verdict
+A plausible standalone App Store utility: capture, local room library, mesh/photo
+preview, version management, import and ZIP sharing. No obvious minimum-functionality
+blocker identified. This is a source/build review, not an App Review approval.
+Do not describe the desktop AI/Three.js reconstruction as an on-device feature.
+
+Verified
+- Public repository was clean before review.
+- Release archive for generic iOS succeeded with Xcode 27.1; signing disabled.
+  Local artifact: /tmp/3d-model-anything-review.xcarchive
+  This archive cannot be uploaded as-is: it must be signed for distribution.
+- Debug simulator self-tests: PASS 137/137. Optional real-bundle benchmark skipped.
+- Simulator launch and existing library rendering inspected. Existing simulator
+  data includes non-office spaces; those screenshots must NOT be used publicly.
+- Archive includes camera purpose string, privacy manifest and offline help/policy.
+- Required reason declarations cover file timestamps and available disk space.
+- Source inspection found no developer network upload, advertising or analytics.
+  Local capture includes photos, poses, depth, meshes, device metadata and diagnostics;
+  exports can contain private surroundings. System sharing is user initiated.
+- Privacy and support public URLs returned HTTP 200.
+- App icon asset and iPhone/iPad targets exist. Non-LiDAR scanning is disabled,
+  while import, viewing and sharing remain available.
+- Local release validator reports four missing prerequisites: price, reviewer
+  contact, reviewed iPhone screenshot, reviewed iPad screenshot.
+- Xcode account currently lists only Personal Team. App Store Connect requires login.
+  Paid program membership cannot be confirmed from a development certificate alone.
+
+Before submission
+1. Sign in to App Store Connect and confirm active Apple Developer Program membership.
+   If needed, account holder enrolls, accepts agreements and pays Apple's fee.
+2. Choose free/paid availability, reviewer name/email/phone, and release mode.
+   Keep reviewer contact out of the public git repository.
+3. Create/confirm app record for com.wesbos.housecapture, 3D Model Anything.
+   Complete content rights, age-rating questionnaire, privacy answers, encryption
+   declaration and applicable regional distribution/trader information accurately.
+4. Capture approved iPhone and iPad screenshots of real app UI using only office
+   data. A clean simulator avoids leaking existing private-room captures.
+5. Run Release on a LiDAR phone: allow/deny/revoke camera, scan/save/reopen/export,
+   interruption/background recovery, low storage, long scan, import and deletion.
+   Check LiDAR iPad layout, VoiceOver and large text before claiming support tested.
+6. Configure distribution signing, archive again, validate in Organizer, upload,
+   wait for processing, select the build, complete metadata and submit for review.
+   Recommend TestFlight installation before App Review. No upload/submission done.
+
+Recommended improvements (not confirmed rejection blockers)
+- Put LiDAR scanning requirement near the start of App Store description; clearly
+  distinguish capture/preview on the phone from desktop reconstruction.
+- Provide an optional small example or easier ZIP import for non-LiDAR users.
+  Current workflow requires unzipping in Files and choosing a manifest folder.
+- Replace device-specific 'this iPhone'/'phone' copy with 'device' for iPad.
+- Add an explicit accessibility label to the capture close button; check other
+  icon-only controls with VoiceOver rather than assuming symbol names are sufficient.
+- Prefer actual saved-room, photo-detail and capture screenshots over empty-library
+  screens. No reconstructed render should imply the iPhone app creates that result.
+
+Evidence / official references
+https://developer.apple.com/app-store/review/guidelines/
+https://developer.apple.com/programs/enroll/
+https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds
+https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
+https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api
+
+Limitations
+No physical LiDAR acceptance run, distribution validation, authenticated account
+review, App Store screenshot review or complete accessibility audit was performed.
+Build/self-tests do not establish tracking accuracy, crash-free device capture or
+Apple acceptance. Existing release-checklist.txt remains the acceptance checklist.

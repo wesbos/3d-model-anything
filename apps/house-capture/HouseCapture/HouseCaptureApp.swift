@@ -34,6 +34,8 @@ struct HomeView: View {
   @State private var error: String?
   @State private var naming = false
   @State private var importing = false
+  @State private var importHelp = false
+  @State private var chooseImportFolder = false
   @State private var working = false
   @State private var newName = ""
   @State private var deleting: HouseProject?
@@ -54,8 +56,8 @@ struct HomeView: View {
           if houses.isEmpty {
             VStack(alignment: .leading, spacing: 18) {
               Image(systemName: "house.lodge").font(.system(size: 64, weight: .ultraLight)).foregroundStyle(Fieldwork.orange)
-              Text("Start with a space you know.").font(.title2.bold())
-              Text("Create a house, then scan your first room. Your scans and photos stay saved on this iPhone.")
+              Text(CaptureController.isSupported ? "Start with a space you know." : "Explore a shared scan.").font(.title2.bold())
+              Text(CaptureController.isSupported ? "Create a house, then scan your first room. Your scans and photos stay saved on this device." : "Import a room shared from 3D Model Anything to explore its 3D scan and photos. No camera access needed.")
                 .foregroundStyle(Fieldwork.secondary)
             }.padding(.vertical, 40)
           }
@@ -88,12 +90,30 @@ struct HomeView: View {
       .overlay { if working { ProgressView("Preparing…").padding(24).background(Fieldwork.paper, in: RoundedRectangle(cornerRadius: 12)) } }
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button { importing = true } label: { Image(systemName: "square.and.arrow.down").frame(width: 44, height: 44) }
+          Button { importHelp = true } label: { Image(systemName: "square.and.arrow.down").frame(width: 44, height: 44) }
             .accessibilityLabel("Import room folder").disabled(working)
         }
         ToolbarItem(placement: .topBarTrailing) {
           NavigationLink { AppHelpScreen() } label: { Image(systemName: "questionmark.circle").frame(width: 44, height: 44) }.accessibilityLabel("Help and privacy")
         }
+      }
+      .sheet(isPresented: $importHelp, onDismiss: {
+        if chooseImportFolder { chooseImportFolder = false; importing = true }
+      }) {
+        NavigationStack {
+          ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+              Text("Import a shared room").font(.largeTitle.bold())
+              Label("Save the shared ZIP to Files.", systemImage: "1.circle")
+              Label("Tap the ZIP in Files to unzip it.", systemImage: "2.circle")
+              Label("Choose the extracted folder containing manifest.json.", systemImage: "3.circle")
+              Text("Choose a room or session export. Whole-house imports aren’t supported yet. Your original files stay untouched.").foregroundStyle(Fieldwork.secondary)
+              Button("Choose extracted folder") { chooseImportFolder = true; importHelp = false }
+                .buttonStyle(FieldworkButtonStyle())
+            }.padding(24).frame(maxWidth: 600).frame(maxWidth: .infinity)
+          }.background(Fieldwork.paper)
+            .toolbar { Button("Done") { importHelp = false } }
+        }.tint(Fieldwork.orange)
       }
       .fileImporter(isPresented: $importing, allowedContentTypes: [.folder]) { result in
         switch result {
@@ -105,10 +125,15 @@ struct HomeView: View {
       .navigationTitle("").navigationBarTitleDisplayMode(.inline)
       .safeAreaInset(edge: .bottom) {
         Button {
-          newName = houses.isEmpty ? "Our house" : ""
-          naming = true
-        } label: { Label("New house", systemImage: "plus") }
-          .buttonStyle(FieldworkButtonStyle()).disabled(!CaptureController.isSupported)
+          if CaptureController.isSupported {
+            newName = houses.isEmpty ? "Our house" : ""
+            naming = true
+          } else { importHelp = true }
+        } label: {
+          Label(CaptureController.isSupported ? "New house" : "Import a room",
+                systemImage: CaptureController.isSupported ? "plus" : "square.and.arrow.down")
+        }
+          .buttonStyle(FieldworkButtonStyle()).disabled(working)
           .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 10).background(Fieldwork.paper)
       }
       .navigationDestination(for: String.self) { id in
@@ -141,7 +166,7 @@ struct HomeView: View {
           reload()
         }
       } message: {
-        Text("This removes every session, photo and mesh of this house from the phone.")
+        Text("This removes every session, photo and mesh of this house from this device.")
       }
       .fullScreenCover(item: $capture, onDismiss: captureClosed) { controller in
         CaptureScreen(controller: controller) { capture = nil }

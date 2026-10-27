@@ -47,7 +47,7 @@ struct FieldworkRoomScreen: View {
               Button { onCapture(house.id, room.zone, nil, room.id) } label: {
                 Label("Continue scanning", systemImage: "viewfinder")
               }.buttonStyle(FieldworkButtonStyle(filled: false)).disabled(!CaptureController.isSupported || busy)
-              Text("Start in this room so the phone can recognize your surroundings.")
+              Text("Start in this room so the device can recognize your surroundings.")
                 .font(.caption).foregroundStyle(Fieldwork.secondary).frame(maxWidth: .infinity, alignment: .leading)
             }
             FieldworkRule()
@@ -75,6 +75,7 @@ struct FieldworkRoomScreen: View {
               .buttonStyle(FieldworkButtonStyle()).disabled(!CaptureController.isSupported)
           }
         }.padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 32)
+          .frame(maxWidth: 820).frame(maxWidth: .infinity)
       } else { ProgressView().padding(40) }
     }
     .background(Fieldwork.paper).foregroundStyle(Fieldwork.ink)
@@ -188,6 +189,7 @@ struct FieldworkRoomScreen: View {
 }
 
 private struct FieldworkRoomPreview: View {
+  @Environment(\.horizontalSizeClass) private var sizeClass
   @StateObject private var model: PreviewModel
   @State private var coverage = false
   @State private var expanded = false
@@ -206,7 +208,7 @@ private struct FieldworkRoomPreview: View {
         case .ready: EmptyView()
         }
       }
-      .frame(height: 280).clipped()
+      .frame(height: sizeClass == .regular ? 420 : 280).clipped()
       .overlay(FieldworkCorners().stroke(Fieldwork.orange, lineWidth: 1.5).allowsHitTesting(false))
       HStack {
         Text(coverage ? "Green surfaces have useful photos" : "Drag to rotate · pinch to zoom")
