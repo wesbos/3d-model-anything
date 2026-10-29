@@ -94,7 +94,7 @@ struct AppHelpScreen: View {
         if let url = publicURL("HouseCaptureSupportURL") { Link("Contact support", destination: url) }
       }
       Section("Permissions") {
-        Text("The camera is used only while capturing rooms. Importing and reviewing saved scans does not require camera access.")
+        Text("The camera is used while capturing rooms. Record compass directions is optional and off for every new session. Enabling it requests Location for true-north labels; geographic coordinates are not saved. Importing and reviewing saved scans does not require these permissions.")
         Button("Open app settings") {
           if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
         }

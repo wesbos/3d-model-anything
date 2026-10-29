@@ -15,6 +15,7 @@ import tempfile
 import shutil
 
 from bundle_to_room import mat, mul
+from compass import direction
 
 
 def flatten(m):
@@ -116,9 +117,17 @@ def export_house(root, out, room_id=None):
                 converted['housePlacement'] = {'house': house['id'], 'zone': zone['id'],
                     'session': session['id'], 'room': room['id'], 'index': room_index,
                     'sessionToHouse': flatten(session_to_house), 'roomToHouse': flatten(room_to_house)}
+                compass = converted.get('compass')
+                if compass and compass.get('status') == 'aligned':
+                    north = direction(room_to_house, compass['north'])
+                    converted['housePlacement']['compass'] = {
+                        'north': north, 'reference': compass['reference'],
+                        'accuracyDegrees': compass['accuracyDegrees']}
                 (stage / filename).write_text(json.dumps(converted, indent=2) + '\n')
                 entry.update(status='ready', file=filename, bundle=str(bundle),
                              roomToHouse=flatten(room_to_house))
+                if 'compass' in converted['housePlacement']:
+                    entry['compass'] = converted['housePlacement']['compass']
             except (KeyError, ValueError, OSError) as error:
                 entry['reason'] = str(error)
                 candidate = stage / f'room-{number:03d}.json'

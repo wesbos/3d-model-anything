@@ -71,6 +71,8 @@ final class PreviewModel: ObservableObject {
   @Published private(set) var measureB: SIMD3<Float>?
 
   @Published private(set) var scaleBar: (width: CGFloat, label: String)?
+  @Published var showNorth = false { didSet { scene.showNorth = showNorth } }
+  @Published private(set) var hasNorth = false
   @Published var showStats = ProcessInfo.processInfo.arguments.contains("-preview-stats")
   @Published private(set) var stats = ""
   @Published private(set) var fps: Double?
@@ -142,6 +144,13 @@ final class PreviewModel: ObservableObject {
       loadStage = "Merging rooms"
       await Task.detached(priority: .userInitiated) { Self.trimSurroundings(loaded) }.value
     }
+    var north: [String: PreviewNorth] = [:]
+    for room in source.rooms {
+      if let session = source.sessions.first(where: { $0.index == room.session }),
+         let reading = PreviewNorth.load(session: session, room: room.index) { north[room.id] = reading }
+    }
+    hasNorth = !north.isEmpty
+    scene.setNorth(north)
     assets = loaded
     for a in loaded { scene.add(a) }
     loadSeconds = CFAbsoluteTimeGetCurrent() - t0
@@ -669,6 +678,7 @@ struct PreviewScreen: View {
       }
       Section {
         Toggle("Surroundings", isOn: Binding(get: { model.showSurroundings }, set: { model.setSurroundings($0) }))
+        Toggle("Recorded north", isOn: $model.showNorth).disabled(!model.hasNorth)
         Toggle("Statistics", isOn: $model.showStats)
         if model.canRecolor {
           Button { model.bakeMissing(force: true) } label: { Label("Recolor from photos", systemImage: "paintbrush") }

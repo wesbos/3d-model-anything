@@ -18,6 +18,7 @@ import argparse
 import json
 import math
 import os
+from compass import bearing, read_compass, photo_compass
 
 
 def mat(t):
@@ -83,6 +84,7 @@ def main():
     W2R = mul(T, R)  # world → room
     to_room = lambda p: apply(W2R, p)
     dir_room = lambda d: apply(W2R, d, 0.0)
+    compass = read_compass(a.bundle, a.room, W2R)
 
     # --- floor polygon (for inside/outside tests) --------------------------------
     poly = None
@@ -113,6 +115,7 @@ def main():
             kids.setdefault(e.get('parentIdentifier'), []).append((kind[:-1], e))
 
     out_walls = []
+    centroid = [sum(to_room(col(mat(wall['transform']), 3))[k] for wall in walls) / len(walls) for k in (0, 2)]
     for i, w in enumerate(walls):
         m = mat(w['transform'])
         ctr = to_room(col(m, 3))
@@ -120,9 +123,12 @@ def main():
         length, height = w['dimensions'][0], w['dimensions'][1]
         n = [-u[2], 0, u[0]]  # u × up
         mid = [ctr[0], ctr[2]]
-        if not inside(mid[0] + n[0] * 0.05, mid[1] + n[2] * 0.05):
+        points_inside = (inside(mid[0] + n[0] * 0.05, mid[1] + n[2] * 0.05) if poly else
+                         (centroid[0] - mid[0]) * n[0] + (centroid[1] - mid[1]) * n[2] >= 0)
+        if not points_inside:
             u = [-u[0], 0, -u[2]]
             n = [-n[0], 0, -n[2]]
+        facing = bearing([-n[0], 0, -n[2]], compass)
         origin = [ctr[0] - u[0] * length / 2, 0, ctr[2] - u[2] * length / 2]
         b = [origin[0] + u[0] * length, origin[2] + u[2] * length]
         openings = []
@@ -138,6 +144,8 @@ def main():
                 'v0': 0.0 if v0 < 0.06 else round(v0, 3), 'v1': round(ec[1] + eh / 2, 3),
                 'isOpen': bool(e['category'].get('door', {}).get('isOpen', False)) if kind == 'door' else None,
             })
+            if facing:
+                openings[-1]['facing'] = facing.copy()
         out_walls.append({
             'index': i,
             'a': [round(origin[0], 4), round(origin[2], 4)],
@@ -150,6 +158,8 @@ def main():
             'confidence': next(iter(w['confidence'])),
             'openings': sorted(openings, key=lambda o: o['u0']),
         })
+        if facing:
+            out_walls[-1]['facing'] = facing
 
     # --- objects -------------------------------------------------------------------
     objects = []
@@ -183,6 +193,9 @@ def main():
             'up': [round(v, 5) for v in up], 'fovY': round(fovY, 3), 'aspect': round(p['height'] / p['width'], 5),
             'blurPixels': p.get('blurPixels'),
         })
+        measured_heading = photo_compass(p, fwd, compass, W2R)
+        if measured_heading:
+            photos[-1]['compass'] = measured_heading
 
     result = {
         'source': os.path.basename(os.path.normpath(a.bundle)) + ('' if a.room is None else f' room {a.room}'),
@@ -190,6 +203,8 @@ def main():
                       'worldToRoom': [W2R[r][c] for c in range(4) for r in range(4)]},
         'polygon': poly, 'walls': out_walls, 'objects': objects, 'photos': photos,
     }
+    if compass is not None:
+        result['compass'] = compass
     out = a.o or os.path.join(a.bundle, 'room.json')
     json.dump(result, open(out, 'w'), indent=1)
 
@@ -236,6 +251,10 @@ def plan(r, path, ppm=140):
         d.line([P(*w['a']), P(*w['b'])], fill=(235, 235, 235) if w['height'] > 2.15 else (150, 150, 255), width=4)
         mx, mz = (w['a'][0] + w['b'][0]) / 2, (w['a'][1] + w['b'][1]) / 2
         d.text(P(mx + w['n'][0] * 0.15, mz + w['n'][2] * 0.15), str(w['index']), fill=(255, 255, 255))
+        if w.get('facing'):
+            f = w['facing']
+            d.text(P(mx + w['n'][0] * .3, mz + w['n'][2] * .3),
+                   f"{f['cardinal']} {f['degrees']:.0f} deg", fill=(120, 230, 255))
         for k in range(int(w['length'] / 0.5) + 1):  # u ticks
             t = k * 0.5
             px, pz = w['a'][0] + w['u'][0] * t, w['a'][1] + w['u'][2] * t
@@ -251,6 +270,12 @@ def plan(r, path, ppm=140):
         n = math.hypot(f[0], f[2]) or 1
         d.line([P(x, z), P(x + f[0] / n * 0.3, z + f[2] / n * 0.3)], fill=(255, 90, 160), width=2)
         d.text(P(x, z), str(i), fill=(255, 150, 200))
+    compass = r.get('compass')
+    if compass and compass.get('status') == 'aligned':
+        n = compass['north']
+        x, z = maxx - .4, minz + .4
+        d.line([P(x, z), P(x + n[0] * .3, z + n[2] * .3)], fill=(120, 230, 255), width=4)
+        d.text(P(x, z + .05), f"N ({compass['reference']}) +/-{compass['accuracyDegrees']:.0f} deg", fill=(120, 230, 255))
     img.save(path)
     print(path)
 

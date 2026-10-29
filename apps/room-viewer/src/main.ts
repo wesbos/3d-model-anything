@@ -1,6 +1,7 @@
 import { appURL } from './asset-base';
 import { collectInventory, showKnolling, stopKnolling } from './knolling';
 import { showLayout } from './layout';
+import { CompassOverlay } from './compass';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
@@ -104,6 +105,7 @@ for (const r of ROOMS) {
 
 const roomBounds = new THREE.Box3();
 let room: BuiltRoom | undefined;
+let compassOverlay: CompassOverlay | undefined;
 let roomId = '';
 let activeRoomId = '';
 let roomRequest = 0;
@@ -184,6 +186,9 @@ async function loadRoom(id: string, updated?: RoomModule) {
   referenceLoading = undefined;
   referenceEpoch++;
   room = next;
+  compassOverlay?.dispose();
+  compassOverlay = room.layout?.compass ? new CompassOverlay(viewport, room.layout, room.wallTop, invalidate) : undefined;
+  compassOverlay?.setVisible(mode !== 'layout' && mode !== 'knolling');
   activeRoomId = mod.id;
   transition = undefined;
   movingRatio = Math.min(window.devicePixelRatio, 1);
@@ -326,6 +331,7 @@ function setMode(next: Mode) {
   if (next === 'walk') toggleControls(false);
   const previous = mode;
   mode = next;
+  compassOverlay?.setVisible(mode !== 'layout' && mode !== 'knolling');
   layoutHost.hidden = mode !== 'layout';
   canvas.hidden = mode === 'layout' || mode === 'knolling';
   knollingHost.hidden = mode !== 'knolling';
@@ -601,6 +607,7 @@ function renderFrame(time: number) {
     if (progress === 1) transition = undefined;
   } else orbit.update();
   updateCameraHelper();
+  compassOverlay?.update(camera);
   const moved = renderedPosition.distanceToSquared(camera.position) > 1e-10
     || 1 - Math.abs(renderedRotation.dot(camera.quaternion)) > 1e-10;
   if (moved) {

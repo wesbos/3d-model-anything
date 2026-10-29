@@ -176,6 +176,9 @@ final class PreviewScene: NSObject, UIGestureRecognizerDelegate {
   private let markersRoot = SCNNode()
   private let measureRoot = SCNNode()
   private let gridNode = SCNNode()
+  private let northRoot = SCNNode()
+  private var northReadings: [String: PreviewNorth] = [:]
+  var showNorth = false { didSet { refreshNorth() } }
   let cameraNode = SCNNode()
   private let camera = SCNCamera()
   private let headlight = SCNNode()
@@ -314,7 +317,7 @@ final class PreviewScene: NSObject, UIGestureRecognizerDelegate {
     ambient.light = amb
     scene.rootNode.addChildNode(ambient)
 
-    for n in [gridNode, meshRoot, roomPlanRoot, markersRoot, measureRoot] { scene.rootNode.addChildNode(n) }
+    for n in [gridNode, meshRoot, roomPlanRoot, markersRoot, measureRoot, northRoot] { scene.rootNode.addChildNode(n) }
     markersRoot.isHidden = true
     roomPlanRoot.isHidden = true
     buildGrid()
@@ -323,6 +326,41 @@ final class PreviewScene: NSObject, UIGestureRecognizerDelegate {
   }
 
   // MARK: - content
+
+  func setNorth(_ readings: [String: PreviewNorth]) {
+    northReadings = readings
+    refreshNorth()
+  }
+
+  private func refreshNorth() {
+    northRoot.childNodes.forEach { $0.removeFromParentNode() }
+    guard showNorth else { return }
+    for (id, reading) in northReadings where visibleRooms.contains(id) {
+      let b = bounds(rooms: [id])
+      let origin = SIMD3<Float>((b.min.x + b.max.x) / 2, b.max.y + 0.2, (b.min.z + b.max.z) / 2)
+      let length: Float = 0.8
+      let shaft = SCNNode(geometry: SCNCylinder(radius: 0.025, height: CGFloat(length)))
+      shaft.simdPosition = origin + reading.vector * length / 2
+      shaft.simdOrientation = simd_quatf(from: SIMD3<Float>(0, 1, 0), to: reading.vector)
+      let tip = SCNNode(geometry: SCNCone(topRadius: 0, bottomRadius: 0.10, height: 0.22))
+      tip.simdPosition = origin + reading.vector * (length + 0.11)
+      tip.simdOrientation = shaft.simdOrientation
+      let text = SCNText(string: "N · \(reading.reference) · ±\(Int(ceil(reading.accuracy)))°", extrusionDepth: 0)
+      text.font = .systemFont(ofSize: 12, weight: .bold)
+      let label = SCNNode(geometry: text)
+      label.simdScale = SIMD3(repeating: 0.012)
+      label.simdPosition = origin + reading.vector * (length + 0.3)
+      label.constraints = [SCNBillboardConstraint()]
+      for node in [shaft, tip, label] {
+        node.geometry?.firstMaterial?.diffuse.contents = UIColor.systemOrange
+        node.geometry?.firstMaterial?.lightingModel = .constant
+        node.geometry?.firstMaterial?.readsFromDepthBuffer = false
+        node.geometry?.firstMaterial?.writesToDepthBuffer = false
+        node.renderingOrder = 100
+        northRoot.addChildNode(node)
+      }
+    }
+  }
 
   func setSessions(_ sessions: [PreviewSession]) {
     for s in sessions { sessionHues[s.index] = s.hue }
@@ -389,6 +427,7 @@ final class PreviewScene: NSObject, UIGestureRecognizerDelegate {
     showSurroundings = surroundings
     for p in parts { apply(p) }
     for (id, n) in roomPlanNodes { n.isHidden = !ids.contains(id) }
+    refreshNorth()
   }
 
   func setClip(_ y: Float?) {

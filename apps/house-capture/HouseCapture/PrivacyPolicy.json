@@ -1,6 +1,6 @@
 {
   "title": "Privacy policy",
-  "updated": "October 7, 2026",
+  "updated": "October 29, 2026",
   "sections": [
     {
       "title": "Your scans stay under your control",
@@ -8,15 +8,15 @@
     },
     {
       "title": "What the app saves",
-      "body": "When you scan, the app uses the camera and LiDAR to save room geometry, reference photos, depth frames, camera poses, and tracking maps on your device. It also saves room names, scan times, device and system information, and technical diagnostics such as tracking errors and memory or thermal conditions. Photos and room geometry can reveal private details of your surroundings."
+      "body": "When you scan, the app uses the camera and LiDAR to save room geometry, reference photos, depth frames, camera poses, and tracking maps on your device. It also saves room names, scan times, device and system information, and technical diagnostics such as tracking errors and memory or thermal conditions. Photos and room geometry can reveal private details of your surroundings. Only when you enable Record compass directions (off for every new session), it also saves compass readings, their estimated accuracy and the matching camera poses. Geographic coordinates are not saved."
     },
     {
       "title": "Permissions",
-      "body": "Camera access is requested when you start a scan. You can revoke it in the device Settings app. Importing, reviewing, deleting, and sharing existing scans does not require camera access. The app does not request access to your Contacts, location, microphone, or Photos library."
+      "body": "Camera access is requested when you start a scan. Only enabling Record compass directions requests Location While Using the App to correct compass readings to true north; a coarse location is sufficient. Without a usable location or permission, direction readings are marked magnetic north. Location and compass updates stay off unless you enable direction recording, and stop when you disable it or scanning is paused or finished. Previously recorded observations stay saved when you disable it. You can revoke permissions in Settings. Importing, reviewing, deleting and sharing existing scans does not require these permissions. The app does not request Contacts, microphone or Photos library access."
     },
     {
       "title": "Sharing and Files",
-      "body": "Nothing is shared automatically. When you use Share, iOS sends the exported ZIP to the app, service, device, or person you choose. Exports may contain reference photos and other recorded scan data, including technical diagnostics in session or whole-house exports. A room mesh can include nearby surfaces recorded during the same session. Review the destination before sharing. Copies you share or save elsewhere are controlled by that destination and are not removed when you delete the original."
+      "body": "Nothing is shared automatically. When you use Share, iOS sends the exported ZIP to the app, service, device, or person you choose. Exports may contain reference photos and other recorded scan data, including compass observations and technical diagnostics in session or whole-house exports. A room mesh can include nearby surfaces recorded during the same session. Review the destination before sharing. Copies you share or save elsewhere are controlled by that destination and are not removed when you delete the original."
     },
     {
       "title": "Storage, backups and deletion",

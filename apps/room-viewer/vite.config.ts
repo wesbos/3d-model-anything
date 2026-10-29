@@ -22,6 +22,7 @@ export default defineConfig({
         main: resolve(app, 'index.html'),
         play: resolve(app, 'play.html'),
         capture: resolve(app, 'tools/capture.html'),
+        inspect: resolve(app, 'inspect.html'),
       },
     },
   },

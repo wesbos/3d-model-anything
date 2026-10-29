@@ -69,6 +69,30 @@ export interface PhotoPose {
   up: number[];
   fovY: number;
   aspect: number;
+  /** Bearing from the compass observation linked to this photo. */
+  compass?: CompassBearing & { timestamp?: number };
+}
+
+export interface CompassBearing {
+  degrees: number;
+  cardinal: string;
+  reference: 'true' | 'magnetic';
+  accuracyDegrees: number;
+}
+
+export interface RoomCompass {
+  status: 'aligned' | 'uncertain' | 'unavailable';
+  /** Horizontal unit north in the SAME coordinates as the room geometry. */
+  north?: number[];
+  reference?: 'true' | 'magnetic';
+  accuracyDegrees?: number;
+  spreadDegrees?: number;
+  sampleCount: number;
+  totalSamples: number;
+  reason?: string;
+  sourceFile?: string;
+  /** Original observations remain in session coordinates. */
+  samples?: unknown[];
 }
 
 export interface RoomModule {
@@ -79,11 +103,13 @@ export interface RoomModule {
 
 /** Measured RoomPlan geometry in room-local meters, for the overhead plan. */
 export interface RoomLayout {
+  compass?: RoomCompass;
   rooms?: { name: string; polygon: number[][]; color: string }[];
   /** Optional provenance for a reviewed/annotated plan. */
   note?: string;
   polygon: number[][];
   walls: { a: number[]; b: number[]; u: number[]; length: number;
-    openings: { kind: string; u0: number; u1: number }[] }[];
+    facing?: CompassBearing;
+    openings: { kind: string; u0: number; u1: number; v0?: number; v1?: number; facing?: CompassBearing }[] }[];
   objects: { category: string; center: number[]; size: number[]; rotY: number }[];
 }

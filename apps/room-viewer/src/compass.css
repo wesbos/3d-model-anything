@@ -1,0 +1,12 @@
+.compass-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+.compass-overlay[hidden], .compass-label[hidden] { display: none; }
+.compass-card { position: absolute; bottom: 18px; left: 18px; display: flex; align-items: center; gap: 10px; max-width: min(500px, calc(100% - 36px)); padding: 10px 12px; border: 1px solid #709da56b; border-radius: 10px; background: #11252be8; color: #d9f1f5; font: 12px/1.5 system-ui, sans-serif; }
+.compass-card button { pointer-events: auto; background: #29464e; color: inherit; border: 1px solid #6c969f; padding: 6px 9px; border-radius: 6px; cursor: pointer; font: inherit; }
+.compass-card button:focus-visible { outline: 2px solid #a3e7f4; outline-offset: 3px; }
+.compass-card button:disabled { cursor: default; opacity: .7; }
+.compass-card button[aria-pressed=false] { background: transparent; }
+.compass-north { font-size: 28px; line-height: 1; transform-origin: center; }
+.compass-label { position: absolute; top: 0; left: 0; white-space: nowrap; padding: 4px 7px; background: #11252be8; color: #d9f1f5; border: 1px solid #709da56b; border-radius: 5px; font: 11px/1.3 system-ui, sans-serif; }
+.directions-off .compass-label, .directions-off .compass-north { display: none; }
+.compass-uncertain .compass-card { border-color: #bd9854; color: #ffdda2; }
+@media (max-width: 600px) { .compass-card { bottom: 10px; left: 10px; max-width: calc(100% - 20px); font-size: 11px; } .compass-label { font-size: 10px; } }

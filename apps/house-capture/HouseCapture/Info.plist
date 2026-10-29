@@ -30,6 +30,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>3D Model Anything uses the camera and LiDAR scanner to measure your rooms and take reference photos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>3D Model Anything uses your location while scanning to record true north for room and window directions. Your geographic coordinates are not saved.</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchScreen</key>

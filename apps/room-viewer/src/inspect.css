@@ -1,0 +1,16 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: #142126; color: #e3edf0; font: 13px/1.5 system-ui, sans-serif; height: 100dvh; display: flex; flex-direction: column; }
+.inspect-toolbar { padding: 12px 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #102027; border-bottom: 1px solid #4d707a; }
+.inspect-toolbar button, .inspect-open { padding: 7px 11px; color: inherit; border: 1px solid #668b95; border-radius: 6px; background: #233d47; cursor: pointer; font: inherit; }
+.inspect-toolbar button[aria-pressed=true] { background: #477b89; }
+.inspect-open input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.inspect-open:focus-within, button:focus-visible { outline: 2px solid #a3e7f4; outline-offset: 3px; }
+#inspect-status { flex: 1 1 260px; color: #b3cbd2; }
+#inspect-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+#inspect-canvas { display: block; }
+#inspect-canvas[hidden] { display: none; }
+#inspect-plan { position: absolute; inset: 0; overflow: auto; padding: 24px; background: #f6f4ee; color: #243c43; }
+#inspect-plan[hidden] { display: none; }
+#inspect-plan svg { width: 100%; height: min(65vh, 700px); touch-action: none; }
+#inspect-plan header { max-width: 900px; margin: auto; }
+#inspect-plan aside { max-width: 900px; margin: auto; }

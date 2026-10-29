@@ -67,6 +67,8 @@ cameras look along −Z. Read dimensions/intrinsics from metadata instead of ass
 Original sensor pixels must stay unrotated when projecting with intrinsics. `bundle_to_room.py`
 uses a clockwise 90° display rotation and derives upright camera framing accordingly.
 
+The app can optionally export compass evidence at the path in `manifest.compass`, with `compassSampleCount` and linked photo `compassTimestamp`. The converter preserves raw observations and derives room-space `compass.north`, true/magnetic reference, uncertainty and outward wall/window `facing` bearings. Carry `compass` into `BuiltRoom.layout` and rotate its north with geometry. House imports include house-space north in `housePlacement.compass`. See `docs/compass-capture.md` in the companion repository for the contract and device validation limits.
+
 ## Prepare a session room and photos
 
 ```sh

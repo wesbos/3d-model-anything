@@ -120,6 +120,7 @@ struct CaptureScreen: View {
             }
             Text("\(controller.rooms.count) room\(controller.rooms.count == 1 ? "" : "s") · \(controller.photoCount) photos")
               .font(.caption.monospacedDigit())
+            if scanning && controller.recordDirections { CompassCaptureStatus(recorder: controller.compass) }
             if controller.phase != .relocalizing {
               HStack(spacing: 6) {
                 AlignmentBadge(alignment: controller.alignment)
@@ -259,6 +260,7 @@ struct CaptureScreen: View {
           .font(.caption2)
           .foregroundStyle(.secondary)
       }
+      directionSetting
       Toggle("High-resolution automatic photos", isOn: $controller.highResolutionPhotos)
         .font(.subheadline)
       Text("Regular photos use camera frames for a lighter scan. High-resolution photos add processing and are limited to one request every 3 seconds while the phone is cool. The shutter always saves a regular photo.")
@@ -287,9 +289,19 @@ struct CaptureScreen: View {
     controller.rooms.contains { HouseProject.roomKey($0.name) == HouseProject.roomKey(name) }
   }
 
+  private var directionSetting: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Toggle("Record compass directions", isOn: $controller.recordDirections)
+        .font(.subheadline)
+      Text("Optional · off for each new session. Enable for north and wall/window bearings in reconstruction. Location enables true north. Turn off to stop new readings; earlier readings stay saved.")
+        .font(.caption).foregroundStyle(.secondary)
+    }
+  }
+
   private var pausedPanel: some View {
     panel {
       Label("Paused", systemImage: "pause.circle.fill").font(.headline)
+      directionSetting
       Text("No photos, depth or coverage while paused. Tracking keeps running: keep the camera pointed at the room (not the floor or your pocket) so it doesn't lose its place.")
         .font(.footnote)
         .foregroundStyle(.secondary)

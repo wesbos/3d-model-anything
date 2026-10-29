@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Measured room · Directions</title></head>
+<body>
+  <header class="inspect-toolbar">
+    <strong>Measured room</strong>
+    <label class="inspect-open">Open room JSON<input id="room-file" type="file" accept=".json,application/json"></label>
+    <button id="model-view" type="button" aria-pressed="true">3D</button>
+    <button id="plan-view" type="button" aria-pressed="false">Floor plan</button>
+    <span id="inspect-status" role="status">Open a converted room.json to inspect measured geometry and recorded directions.</span>
+  </header>
+  <main id="inspect-viewport"><canvas id="inspect-canvas" aria-label="Measured room. Drag to orbit and scroll to zoom."></canvas><section id="inspect-plan" hidden></section></main>
+  <script type="module" src="./src/inspect.ts"></script>
+</body>
+</html>

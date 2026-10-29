@@ -26,7 +26,7 @@ import UIKit
 struct ScanBundle {
   let url: URL
 
-  static let subfolders = ["rooms", "mesh", "photos", "depth"]
+  static let subfolders = ["rooms", "mesh", "photos", "depth", "compass"]
 
   /// A new session folder inside a house: <house>/sessions/<id>/
   static func create(in house: HouseProject, id: String) throws -> ScanBundle {
@@ -97,6 +97,16 @@ struct ScanBundle {
     try encoder.encode(photos).write(to: file("photos/photos.json"))
   }
 
+  func saveCompass(_ records: [CompassRecord]) throws {
+    let path = file("compass/headings.json")
+    if records.isEmpty {
+      if FileManager.default.fileExists(atPath: path.path) { try FileManager.default.removeItem(at: path) }
+    } else {
+      try FileManager.default.createDirectory(at: path.deletingLastPathComponent(), withIntermediateDirectories: true)
+      try encoder.encode(records).write(to: path, options: .atomic)
+    }
+  }
+
   // MARK: manifest
 
   func writeManifest(_ manifest: Manifest) throws {
@@ -148,6 +158,10 @@ struct ScanBundle {
       try JSONDecoder().decode(type, from: Data(contentsOf: checkedSource(path)))
     }
     let selectedPhotos = try records([PhotoRecord].self, path: manifest.photos).filter { $0.room == index }
+    let selectedCompass: [CompassRecord]
+    if let path = manifest.compass {
+      selectedCompass = try records([CompassRecord].self, path: path).filter { $0.room == index }
+    } else { selectedCompass = [] }
     let selectedDepth: [DepthRecorder.Record]
     if let path = manifest.depthFrames {
       selectedDepth = try records([DepthRecorder.Record].self, path: path).filter { $0.room == index }
@@ -181,11 +195,14 @@ struct ScanBundle {
       if let rgb = frame.rgb { try copy(rgb) }
     }
     try output.savePhotos(selectedPhotos)
+    try output.saveCompass(selectedCompass)
     try encoder.encode(selectedDepth).write(to: output.file("depth/frames.json"))
     room.name = name
     manifest.rooms = [room]
     manifest.photos = "photos/photos.json"
     manifest.photoCount = selectedPhotos.count
+    manifest.compass = selectedCompass.isEmpty ? nil : "compass/headings.json"
+    manifest.compassSampleCount = selectedCompass.isEmpty ? nil : selectedCompass.count
     manifest.depthFrames = "depth/frames.json"
     manifest.depthFrameCount = selectedDepth.count
     manifest.mesh = room.mesh
@@ -279,6 +296,9 @@ struct Manifest: Codable {
   var depthFrames: String?
   var depthFrameCount: Int?
   var diagnostics: Diagnostics?
+  /// Optional, additive house-capture/5 direction evidence. No geographic coordinates.
+  var compass: String?
+  var compassSampleCount: Int?
 }
 
 /// What the capture session actually did, for debugging bundles after the fact
@@ -341,6 +361,14 @@ struct Diagnostics: Codable {
     var coverageQueueDelayMS: Double?
     var pendingMeshUpdates: Int?
     var coalescedMeshUpdates: Int?
+    var cameraAuthorization: Int?
+    var locationAuthorization: Int?
+    var cameraWidth: Int?
+    var cameraHeight: Int?
+    var cameraPixelFormat: UInt32?
+    var cameraLumaMean: Double?
+    var cameraLumaMin: Int?
+    var cameraLumaMax: Int?
   }
 
   struct Event: Codable {
@@ -370,6 +398,7 @@ struct Diagnostics: Codable {
   }
 
   mutating func log(_ what: String, since start: Date) {
+    print("CAPTURE: \(what)")
     var list = events ?? []
     list.append(Event(t: (Date().timeIntervalSince(start) * 10).rounded() / 10, what: what))
     if list.count > 400 { list.removeFirst(list.count - 400) }
@@ -439,6 +468,8 @@ struct PhotoRecord: Codable {
   var highRes: Bool?
   /// camera state when the photo was taken, for normalizing brightness/color across photos
   var camera: CameraState?
+  /// Monotonic timestamp of the paired compass/headings.json observation, if within 1 s.
+  var compassTimestamp: TimeInterval?
 }
 
 /// Exposure + white balance + ARKit's light estimate for one frame

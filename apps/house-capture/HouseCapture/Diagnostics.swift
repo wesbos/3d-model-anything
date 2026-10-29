@@ -3,6 +3,30 @@ import Darwin
 import RoomPlan
 import SwiftUI
 
+extension Diagnostics {
+  /// Sample brightness only; never retain or copy the camera image into diagnostics.
+  static func cameraLevels(_ image: CVPixelBuffer) -> (mean: Double, min: Int, max: Int)? {
+    let format = CVPixelBufferGetPixelFormatType(image)
+    guard format == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange || format == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
+          CVPixelBufferGetPlaneCount(image) > 0,
+          CVPixelBufferLockBaseAddress(image, .readOnly) == kCVReturnSuccess else { return nil }
+    defer { CVPixelBufferUnlockBaseAddress(image, .readOnly) }
+    guard let base = CVPixelBufferGetBaseAddressOfPlane(image, 0) else { return nil }
+    let width = CVPixelBufferGetWidthOfPlane(image, 0), height = CVPixelBufferGetHeightOfPlane(image, 0)
+    let rowBytes = CVPixelBufferGetBytesPerRowOfPlane(image, 0)
+    let pixels = base.assumingMemoryBound(to: UInt8.self)
+    var sum = 0, count = 0, low = 255, high = 0
+    for y in stride(from: 0, to: height, by: max(1, height / 16)) {
+      for x in stride(from: 0, to: width, by: max(1, width / 16)) {
+        let value = Int(pixels[y * rowBytes + x])
+        sum += value; count += 1; low = min(low, value); high = max(high, value)
+      }
+    }
+    guard count > 0 else { return nil }
+    return (Double(sum) / Double(count), low, high)
+  }
+}
+
 /// Launch with `-diag` to probe how RoomPlan and ARKit's LiDAR mesh coexist on one
 /// ARSession. Prints `DIAG:` lines (read them with `devicectl ... --console`) and exits.
 @MainActor

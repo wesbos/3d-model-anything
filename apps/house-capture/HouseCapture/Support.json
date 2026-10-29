@@ -1,6 +1,6 @@
 {
   "title": "Help & support",
-  "updated": "October 7, 2026",
+  "updated": "October 29, 2026",
   "sections": [
     {
       "title": "Supported devices",
@@ -15,12 +15,16 @@
       "body": "Open Help & privacy → Open app settings and enable Camera. If Camera is restricted, check Screen Time or your device-management policy. Saved scans remain available without camera access."
     },
     {
+      "title": "Record room directions",
+      "body": "Record compass directions is optional and off for every new capture session. Enable the toggle before scanning or while paused, then allow Location While Using the App for true north. Turning it off stops new readings; earlier readings stay saved. The capture screen shows the rear camera bearing and estimated accuracy. Without a usable location, readings are marked magnetic north. Move away from metal or electrical equipment if directions are uncertain. Room exports retain compass readings for reconstructed wall/window labels. Geographic coordinates are not saved. Old scans cannot recover compass directions that were never recorded."
+    },
+    {
       "title": "Import a shared room",
       "body": "Save a 3D Model Anything room or session ZIP to Files. Tap the ZIP in Files to extract it. In 3D Model Anything, tap the import icon at the top left and choose the extracted folder containing manifest.json. If Files created an extra outer folder, select the inner folder with that file. Whole-house folder import is not supported; share a room or session instead. Each import creates a new house and leaves the original folder unchanged."
     },
     {
       "title": "Share and AirDrop",
-      "body": "Open a room and tap Share room, then choose AirDrop or another destination in the system share sheet. This shares the active scan’s layout, mesh, photos and depth data. Use Scan history → Use this scan to share an older version. The house options menu can share the whole house, and Sessions can share an entire capture session. No receiver, companion app, or account is needed."
+      "body": "Open a room and tap Share room, then choose AirDrop or another destination in the system share sheet. This shares the active scan’s layout, mesh, photos, depth and recorded compass data. Use Scan history → Use this scan to share an older version. The house options menu can share the whole house, and Sessions can share an entire capture session. No receiver, companion app, or account is needed."
     },
     {
       "title": "Photo detail and previews",

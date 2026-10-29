@@ -18,6 +18,8 @@ Read [house-capture.md](references/house-capture.md) for iPhone exports. The app
 
 Use meters, +Y up and floor zero. Retain session-to-room and room-to-house transforms. Apply the same transformations to geometry, photo poses, lights and reference layers. Never infer session alignment from matching room names.
 
+Preserve optional compass evidence. Converted `compass.north` is in room coordinates; raw `compass.samples` stay in session coordinates. Carry `compass` into `BuiltRoom.layout` for the viewer's measured wall/window labels. Rotate north with geometry. Retain true/magnetic reference, uncertainty, outward `facing` bearings and linked photo observations. Missing or uncertain readings must remain unlabeled. See `docs/compass-capture.md` in the companion repository.
+
 ## Project setup
 
 Read [project-layout.md](references/project-layout.md) for the companion viewer and commands. Its public office is an optional worked example, not the dimensions or quality requirement for another person's room. In an existing project, adapt to its conventions rather than copying over its application.
