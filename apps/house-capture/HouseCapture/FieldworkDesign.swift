@@ -2,14 +2,49 @@ import SwiftUI
 import SceneKit
 import simd
 
+enum AppAppearance: String, CaseIterable, Identifiable {
+  case system, light, dark
+
+  var id: String { rawValue }
+  var title: String { rawValue.capitalized }
+
+  static func colorScheme(for rawValue: String) -> ColorScheme? {
+    switch AppAppearance(rawValue: rawValue) ?? .system {
+    case .system: return nil
+    case .light: return .light
+    case .dark: return .dark
+    }
+  }
+}
+
 /// Fieldwork: paper, ink, ruled sections and one purposeful accent.
 enum Fieldwork {
-  static let paper = Color(red: 0.965, green: 0.951, blue: 0.922)
-  static let ink = Color(red: 0.12, green: 0.13, blue: 0.12)
-  static let secondary = Color(red: 0.39, green: 0.39, blue: 0.36)
-  static let orange = Color(red: 0.76, green: 0.28, blue: 0.12)
-  static let rule = Color(red: 0.81, green: 0.79, blue: 0.75)
-  static let uiPaper = UIColor(red: 0.965, green: 0.951, blue: 0.922, alpha: 1)
+  static let uiPaper = UIColor { traits in
+    traits.userInterfaceStyle == .dark
+      ? UIColor(red: 0.075, green: 0.082, blue: 0.078, alpha: 1)
+      : UIColor(red: 0.965, green: 0.951, blue: 0.922, alpha: 1)
+  }
+  static let paper = Color(uiColor: uiPaper)
+  static let ink = Color(uiColor: UIColor { traits in
+    traits.userInterfaceStyle == .dark
+      ? UIColor(red: 0.92, green: 0.92, blue: 0.88, alpha: 1)
+      : UIColor(red: 0.12, green: 0.13, blue: 0.12, alpha: 1)
+  })
+  static let secondary = Color(uiColor: UIColor { traits in
+    traits.userInterfaceStyle == .dark
+      ? UIColor(red: 0.66, green: 0.67, blue: 0.63, alpha: 1)
+      : UIColor(red: 0.39, green: 0.39, blue: 0.36, alpha: 1)
+  })
+  static let orange = Color(uiColor: UIColor { traits in
+    traits.userInterfaceStyle == .dark
+      ? UIColor(red: 0.79, green: 0.28, blue: 0.13, alpha: 1)
+      : UIColor(red: 0.76, green: 0.28, blue: 0.12, alpha: 1)
+  })
+  static let rule = Color(uiColor: UIColor { traits in
+    traits.userInterfaceStyle == .dark
+      ? UIColor(red: 0.25, green: 0.26, blue: 0.24, alpha: 1)
+      : UIColor(red: 0.81, green: 0.79, blue: 0.75, alpha: 1)
+  })
 }
 
 struct FieldworkButtonStyle: ButtonStyle {

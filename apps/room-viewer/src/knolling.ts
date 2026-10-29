@@ -115,7 +115,9 @@ export async function showKnolling(host: HTMLElement, room: BuiltRoom, title: st
   renderer.toneMapping=THREE.AgXToneMapping;renderer.toneMappingExposure=1.05;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
   host.prepend(renderer.domElement);renderer.domElement.setAttribute('aria-label','Overhead knolling arrangement');
-  const scene=new THREE.Scene();scene.background=new THREE.Color('#d7d0c1');
+  const scene=new THREE.Scene();
+  const surfaceColor=document.documentElement.dataset.theme==='dark'?'#20231f':'#d7d0c1';
+  scene.background=new THREE.Color(surfaceColor);
   const studio=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer);
   const environment=pmrem.fromScene(studio,.08);scene.environment=environment.texture;scene.environmentIntensity=.3;
   studio.dispose();pmrem.dispose();
@@ -123,7 +125,7 @@ export async function showKnolling(host: HTMLElement, room: BuiltRoom, title: st
   const {objects,packed,originalGeometries}=createKnollingLayout(room);
   scene.add(objects);
   batchStatic(objects,[],{mergeDynamic:true});
-  const floorMaterial=new THREE.MeshStandardMaterial({color:'#d7d0c1',roughness:1});
+  const floorMaterial=new THREE.MeshStandardMaterial({color:surfaceColor,roughness:1});
   const floorGeometry=new THREE.PlaneGeometry(200,200);
   const floor=new THREE.Mesh(floorGeometry,floorMaterial);floor.rotation.x=-Math.PI/2;floor.position.y=-.015;floor.receiveShadow=true;scene.add(floor);
   const light=new THREE.DirectionalLight('#fff8e9',2.8);light.position.set(-5,14,-4);light.castShadow=true;
@@ -136,10 +138,12 @@ export async function showKnolling(host: HTMLElement, room: BuiltRoom, title: st
   controls.screenSpacePanning=true;controls.mouseButtons.LEFT=THREE.MOUSE.ROTATE;controls.mouseButtons.RIGHT=THREE.MOUSE.PAN;controls.minZoom=.5;controls.maxZoom=18;
   let pending=0,disposed=false;
   const render=()=>{if(disposed||pending)return;pending=requestAnimationFrame(()=>{pending=0;renderer.render(scene,camera);renderer.shadowMap.autoUpdate=false;host.dataset.ready='1';});};
+  const appearanceChanged=()=>{const color=document.documentElement.dataset.theme==='dark'?'#20231f':'#d7d0c1';scene.background=new THREE.Color(color);floorMaterial.color.set(color);render();};
+  window.addEventListener('appearancechange',appearanceChanged);
   const fit=()=>{const aspect=host.clientWidth/host.clientHeight;const height=Math.max(packed.height+1.4,(packed.width+1)/aspect);camera.left=-height*aspect/2;camera.right=height*aspect/2;camera.top=height/2;camera.bottom=-height/2;camera.zoom=1;camera.position.set(0,30,.001);controls.target.set(0,0,0);camera.updateProjectionMatrix();controls.update();render();};
   const resize=()=>{renderer.setSize(host.clientWidth,host.clientHeight);fit();};
   const observer=new ResizeObserver(resize);observer.observe(host);
   controls.addEventListener('change',render);fitButton.addEventListener('click',fit);renderer.domElement.addEventListener('dblclick',fit);
   host.dataset.ready='0';host.dataset.items=String(items.length);resize();
-  cleanup=()=>{disposed=true;cancelAnimationFrame(pending);observer.disconnect();controls.dispose();environment.dispose();light.shadow.dispose();floorGeometry.dispose();floorMaterial.dispose();objects.traverse(o=>{if(o instanceof THREE.Mesh&&!originalGeometries.has(o.geometry))o.geometry.dispose();});renderer.dispose();renderer.forceContextLoss();};
+  cleanup=()=>{disposed=true;window.removeEventListener('appearancechange',appearanceChanged);cancelAnimationFrame(pending);observer.disconnect();controls.dispose();environment.dispose();light.shadow.dispose();floorGeometry.dispose();floorMaterial.dispose();objects.traverse(o=>{if(o instanceof THREE.Mesh&&!originalGeometries.has(o.geometry))o.geometry.dispose();});renderer.dispose();renderer.forceContextLoss();};
 }

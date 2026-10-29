@@ -32,7 +32,7 @@ enum PreviewDebug {
     if let houseID = value("-fieldwork-house"), let roomID = value("-fieldwork-room") {
       return AnyView(NavigationStack {
         FieldworkRoomScreen(houseID: houseID, roomID: roomID, generation: 0, onCapture: { _, _, _, _ in })
-      }.tint(Fieldwork.orange).preferredColorScheme(.light))
+      }.tint(Fieldwork.orange))
     }
     #endif
     guard let path = value("-preview-house") else { return nil }

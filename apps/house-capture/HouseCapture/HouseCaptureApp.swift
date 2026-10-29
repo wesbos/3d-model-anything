@@ -4,24 +4,29 @@ import UniformTypeIdentifiers
 
 @main
 struct HouseCaptureApp: App {
+  @AppStorage("appAppearance") private var appearanceRawValue = AppAppearance.system.rawValue
+
   var body: some Scene {
     WindowGroup {
-      #if DEBUG
-      let args = ProcessInfo.processInfo.arguments
-      if let preview = PreviewDebug.launchView() {
-        preview // -preview-house <folder> (see PreviewDebug.swift)
-      } else if args.contains("-diag") {
-        DiagnosticsView()
-      } else if args.contains("-selftest") {
-        SelfTestView()
-      } else if args.contains("-autotest") || args.contains("-autotest-continue") {
-        AutoTestView(continueLatest: args.contains("-autotest-continue"))
-      } else {
+      Group {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let preview = PreviewDebug.launchView() {
+          preview // -preview-house <folder> (see PreviewDebug.swift)
+        } else if args.contains("-diag") {
+          DiagnosticsView()
+        } else if args.contains("-selftest") {
+          SelfTestView()
+        } else if args.contains("-autotest") || args.contains("-autotest-continue") {
+          AutoTestView(continueLatest: args.contains("-autotest-continue"))
+        } else {
+          HomeView()
+        }
+        #else
         HomeView()
+        #endif
       }
-      #else
-      HomeView()
-      #endif
+      .preferredColorScheme(AppAppearance.colorScheme(for: appearanceRawValue))
     }
   }
 }
@@ -40,6 +45,7 @@ struct HomeView: View {
   /// bumped when a capture closes so the house screen reloads
   @State private var generation = 0
   @State private var openedFromArgs = false
+  @AppStorage("appAppearance") private var appearanceRawValue = AppAppearance.system.rawValue
 
   var body: some View {
     NavigationStack(path: $path) {
@@ -90,6 +96,19 @@ struct HomeView: View {
         ToolbarItem(placement: .topBarLeading) {
           Button { importing = true } label: { Image(systemName: "square.and.arrow.down").frame(width: 44, height: 44) }
             .accessibilityLabel("Import room folder").disabled(working)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          Menu {
+            Picker("Appearance", selection: $appearanceRawValue) {
+              ForEach(AppAppearance.allCases) { appearance in
+                Text(appearance.title).tag(appearance.rawValue)
+              }
+            }
+            .pickerStyle(.inline)
+          } label: {
+            Image(systemName: "circle.lefthalf.filled").frame(width: 44, height: 44)
+          }
+          .accessibilityLabel("Appearance")
         }
         ToolbarItem(placement: .topBarTrailing) {
           NavigationLink { AppHelpScreen() } label: { Image(systemName: "questionmark.circle").frame(width: 44, height: 44) }.accessibilityLabel("Help and privacy")
@@ -148,7 +167,6 @@ struct HomeView: View {
       }
     }
     .tint(Fieldwork.orange)
-    .preferredColorScheme(.light)
     .toolbarBackground(Fieldwork.paper, for: .navigationBar)
     .toolbarBackground(.visible, for: .navigationBar)
   }

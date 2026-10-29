@@ -15,7 +15,7 @@ export function showLayout(host: HTMLElement, room: RoomLayout, name: string) {
   const xs = room.polygon.map(p => p[0]), zs = room.polygon.map(p => p[1]);
   const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs), maxZ = Math.max(...zs);
   const width = maxX - minX, height = maxZ - minZ;
-  const outlines = room.rooms ?? [{name, polygon: room.polygon, color:'#e7eae1'}];
+  const outlines = room.rooms ?? [{name, polygon: room.polygon, color:'var(--plan-floor)'}];
   const area = outlines.reduce((total, r) => total + Math.abs(r.polygon.reduce((sum, a, i) => {
     const b = r.polygon[(i + 1) % r.polygon.length]; return sum + a[0] * b[1] - b[0] * a[1];
   }, 0)) / 2, 0);
@@ -41,24 +41,24 @@ export function showLayout(host: HTMLElement, room: RoomLayout, name: string) {
     svg.append(group);
   }
   for (const w of room.walls) {
-    svg.append(el('line', { x1:w.a[0], y1:w.a[1], x2:w.b[0], y2:w.b[1], stroke:'#293e42', 'stroke-width':.075 }));
+    svg.append(el('line', { x1:w.a[0], y1:w.a[1], x2:w.b[0], y2:w.b[1], stroke:'var(--plan-wall)', 'stroke-width':.075 }));
     for (const o of w.openings) {
       const coords = { x1:w.a[0]+w.u[0]*o.u0, y1:w.a[1]+w.u[2]*o.u0, x2:w.a[0]+w.u[0]*o.u1, y2:w.a[1]+w.u[2]*o.u1 };
-      svg.append(el('line', {...coords, stroke:'#f7f6f2', 'stroke-width':.085}));
+      svg.append(el('line', {...coords, stroke:'var(--plan-gap)', 'stroke-width':.085}));
       svg.append(el('line', {...coords, stroke:o.kind==='window'?'#258eaf':'#be753d', 'stroke-width':.025}));
     }
   }
   for (const [i,o] of room.objects.entries()) {
     // Numbered labels stay upright; the legend preserves categories without covering furniture.
-    svg.append(el('text', { x:o.center[0], y:o.center[2], 'text-anchor':'middle', 'dominant-baseline':'central', 'font-size':.14, fill:'#22383c', stroke:'#fff', 'stroke-width':.045, 'paint-order':'stroke' }, String(i+1)));
+    svg.append(el('text', { x:o.center[0], y:o.center[2], 'text-anchor':'middle', 'dominant-baseline':'central', 'font-size':.14, fill:'var(--plan-text)', stroke:'var(--plan-label-halo)', 'stroke-width':.045, 'paint-order':'stroke' }, String(i+1)));
   }
   for (const r of room.rooms ?? []) {
     const x=(Math.min(...r.polygon.map(p=>p[0]))+Math.max(...r.polygon.map(p=>p[0])))/2;
     const z=(Math.min(...r.polygon.map(p=>p[1]))+Math.max(...r.polygon.map(p=>p[1])))/2;
-    svg.append(el('text',{x,y:z,'text-anchor':'middle','font-size':.26,'font-weight':600,fill:'#22383c',stroke:'#fff','stroke-width':.07,'paint-order':'stroke'},r.name));
+    svg.append(el('text',{x,y:z,'text-anchor':'middle','font-size':.26,'font-weight':600,fill:'var(--plan-text)',stroke:'var(--plan-label-halo)','stroke-width':.07,'paint-order':'stroke'},r.name));
   }
-  svg.append(el('text',{x:(minX+maxX)/2,y:minZ-.25,'text-anchor':'middle','font-size':.17,fill:'#3b5356'},`${width.toFixed(2)} m`));
-  svg.append(el('text',{x:maxX+.25,y:(minZ+maxZ)/2,transform:`rotate(90 ${maxX+.25} ${(minZ+maxZ)/2})`,'text-anchor':'middle','font-size':.17,fill:'#3b5356'},`${height.toFixed(2)} m`));
+  svg.append(el('text',{x:(minX+maxX)/2,y:minZ-.25,'text-anchor':'middle','font-size':.17,fill:'var(--plan-muted)'},`${width.toFixed(2)} m`));
+  svg.append(el('text',{x:maxX+.25,y:(minZ+maxZ)/2,transform:`rotate(90 ${maxX+.25} ${(minZ+maxZ)/2})`,'text-anchor':'middle','font-size':.17,fill:'var(--plan-muted)'},`${height.toFixed(2)} m`));
   const legend = document.createElement('aside');
   const key = document.createElement('p'); key.textContent = 'Blue: windows · Orange: doors/openings'; legend.append(key);
   const list = document.createElement('ol');

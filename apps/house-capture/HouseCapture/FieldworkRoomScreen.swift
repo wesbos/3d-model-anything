@@ -188,6 +188,7 @@ struct FieldworkRoomScreen: View {
 }
 
 private struct FieldworkRoomPreview: View {
+  @Environment(\.colorScheme) private var colorScheme
   @StateObject private var model: PreviewModel
   @State private var coverage = false
   @State private var expanded = false
@@ -222,6 +223,7 @@ private struct FieldworkRoomPreview: View {
     }
     .onAppear { paperBackground(); model.start() }
     .onDisappear { if !expanded { model.cancelBake() } }
+    .onChange(of: colorScheme) { _, _ in paperBackground() }
     .onChange(of: coverage) { _, value in model.setStyle(value ? .coverage : .photo) }
     .fullScreenCover(isPresented: $expanded, onDismiss: {
       paperBackground()

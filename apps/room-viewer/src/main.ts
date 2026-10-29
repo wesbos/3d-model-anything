@@ -11,6 +11,7 @@ import { disposeObjects } from '../../../packages/room-runtime/dispose';
 import { updateCameraDepth } from '../../../packages/room-runtime/camera-depth';
 import { setMaxAnisotropy } from '../../../packages/room-runtime/materials';
 import { applyRoomRendering, createPipeline, precompileRoomRendering } from '../../../packages/room-runtime/render';
+import { installAppearanceToggle } from './appearance';
 
 document.querySelector('.play-link')!.addEventListener('click', () => { location.href = appURL('play.html') + location.search; });
 
@@ -66,6 +67,10 @@ function requestFrame() {
   if (!pendingFrame && !document.hidden) pendingFrame = requestAnimationFrame(renderFrame);
 }
 const invalidate = () => { dirty = true; requestFrame(); };
+installAppearanceToggle(document.querySelector<HTMLButtonElement>('#appearance-toggle')!, appearance => {
+  scene.background = new THREE.Color(appearance === 'dark' ? '#111' : '#e7e9e6');
+  invalidate();
+});
 THREE.DefaultLoadingManager.onLoad = invalidate;
 orbit.addEventListener('change', invalidate);
 walk.addEventListener('change', invalidate);
