@@ -279,6 +279,7 @@ struct Manifest: Codable {
   var depthFrames: String?
   var depthFrameCount: Int?
   var diagnostics: Diagnostics?
+  var camera: CaptureCamera?
 }
 
 /// What the capture session actually did, for debugging bundles after the fact
@@ -439,6 +440,7 @@ struct PhotoRecord: Codable {
   var highRes: Bool?
   /// camera state when the photo was taken, for normalizing brightness/color across photos
   var camera: CameraState?
+  var motion: PhotoMotion?
 }
 
 /// Exposure + white balance + ARKit's light estimate for one frame
@@ -455,6 +457,35 @@ struct CameraState: Codable {
   /// ARKit ambient light estimate: intensity (lumen, ~1000 = neutral) and color temperature (K)
   var ambientIntensity: Float?
   var colorTemperature: Float?
+  /// autofocus lens position, 0 (near) – 1 (far). Focus shifts the focal length slightly,
+  /// which is why fx varies between photos.
+  var lensPosition: Float?
+}
+
+/// How the camera was moving when a photo was taken, from ARKit poses ~50 ms either side
+/// (or just before, for photos saved immediately). ARKit treats each image as one instant,
+/// but the sensor reads out row by row, so motion skews the image even when it looks sharp.
+struct PhotoMotion: Codable {
+  /// camera velocity, m/s, world space
+  var velocity: [Float]
+  /// rotation rate, rad/s, camera space (sensor orientation: +x right, +y up, +z back)
+  var angularVelocity: [Float]
+  /// speed across the view direction, m/s: the part that shifts near vs far things differently
+  var lateralSpeed: Float
+}
+
+/// The camera ARKit ran during the detail pass
+struct CaptureCamera: Codable {
+  /// AVCaptureDevice.DeviceType, e.g. "AVCaptureDeviceTypeBuiltInWideAngleCamera"
+  var deviceType: String
+  /// video frame size (sensor orientation) and rate
+  var videoWidth: Int
+  var videoHeight: Int
+  var framesPerSecond: Int
+  /// size ARKit recommends for full-resolution stills; nil if unsupported
+  var highResolutionWidth: Int?
+  var highResolutionHeight: Int?
+  var autoFocus: Bool
 }
 
 extension simd_float4x4 {

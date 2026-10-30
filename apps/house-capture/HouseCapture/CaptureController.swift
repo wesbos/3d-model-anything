@@ -163,6 +163,8 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
   private var displayLink: CADisplayLink?
   private var previousPose: (time: TimeInterval, pose: simd_float4x4)?
   private var poseHistory: [(time: TimeInterval, pose: simd_float4x4)] = []
+  /// the camera of the detail pass, for the manifest
+  private var captureCamera: CaptureCamera?
   private var lastPosePublish: TimeInterval = 0
   private var lastEvaluate: TimeInterval = 0
   private var lastMeshCheck: TimeInterval = 0
@@ -1049,7 +1051,8 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
       photoCount: photos.count,
       depthFrames: depthRecorder.records.isEmpty ? nil : "depth/frames.json",
       depthFrameCount: depthRecorder.records.count,
-      diagnostics: diagnostics
+      diagnostics: diagnostics,
+      camera: captureCamera ?? existing?.camera
     ))
   }
 
@@ -1098,6 +1101,13 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
         meshReady = true
         meshReadyAt = CACurrentMediaTime()
         diagnostics.detailConfiguration = "\(type(of: c)) reconstruction=\(c.sceneReconstruction.rawValue) semantics=\(c.frameSemantics.rawValue) video=\(Int(c.videoFormat.imageResolution.width))x\(Int(c.videoFormat.imageResolution.height)) worldMap=\(c.initialWorldMap != nil)"
+        let highRes = ARWorldTrackingConfiguration.recommendedVideoFormatForHighResolutionFrameCapturing?.imageResolution
+        captureCamera = CaptureCamera(
+          deviceType: c.videoFormat.captureDeviceType.rawValue,
+          videoWidth: Int(c.videoFormat.imageResolution.width), videoHeight: Int(c.videoFormat.imageResolution.height),
+          framesPerSecond: c.videoFormat.framesPerSecond,
+          highResolutionWidth: highRes.map { Int($0.width) }, highResolutionHeight: highRes.map { Int($0.height) },
+          autoFocus: c.isAutoFocusEnabled)
       }
       return
     }
@@ -1460,6 +1470,24 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
     }
   }
 
+  /// Camera motion around `time` from the pose history: ~50 ms either side when the
+  /// frames after it have arrived (held candidates), otherwise the ~100 ms before it.
+  private func motion(at time: TimeInterval) -> PhotoMotion? {
+    guard let a = poseHistory.last(where: { $0.time <= time - 0.05 }) ?? poseHistory.first,
+          let b = poseHistory.first(where: { $0.time >= time + 0.05 }) ?? poseHistory.last,
+          b.time - a.time > 0.02, b.time - a.time < 0.3 else { return nil }
+    let dt = Float(b.time - a.time)
+    let velocity = simd_make_float3(b.pose.columns.3 - a.pose.columns.3) / dt
+    var delta = simd_quatf(a.pose).inverse * simd_quatf(b.pose) // rotation in camera space
+    if delta.real < 0 { delta = simd_quatf(vector: -delta.vector) } // shortest way round
+    let angular = delta.angle > 1e-6 ? delta.axis * (delta.angle / dt) : .zero
+    let toCamera = simd_float3x3(simd_make_float3(a.pose.columns.0), simd_make_float3(a.pose.columns.1), simd_make_float3(a.pose.columns.2)).transpose
+    let v = toCamera * velocity
+    let lateral = simd_length(simd_make_float2(v.x, v.y))
+    return PhotoMotion(velocity: [velocity.x, velocity.y, velocity.z], angularVelocity: [angular.x, angular.y, angular.z],
+                       lateralSpeed: lateral)
+  }
+
   /// Under ~1.5 px of smear (at 1920 wide) is effectively sharp; up to 6 px is still usable.
   nonisolated private static let sharpBlur: Float = 1.5
   nonisolated private static let acceptableBlur: Float = 6
@@ -1495,7 +1523,8 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
       blurPixels: manual ? nil : shot.blur * Float(scale),
       pass: "scan",
       highRes: shot.highRes,
-      camera: shot.camera
+      camera: shot.camera,
+      motion: motion(at: shot.timestamp)
     )
     let view = PhotoView(transform: shot.transform)
     let enginePhoto = CoverageEngine.Photo(

@@ -46,7 +46,8 @@ final class CameraControl {
       whiteBalance: g.map { [$0.redGain, $0.greenGain, $0.blueGain] },
       whiteBalanceLocked: whiteBalanceLocked,
       ambientIntensity: frame.lightEstimate.map { Float($0.ambientIntensity) },
-      colorTemperature: frame.lightEstimate.map { Float($0.ambientColorTemperature) }
+      colorTemperature: frame.lightEstimate.map { Float($0.ambientColorTemperature) },
+      lensPosition: d?.lensPosition
     )
   }
 }

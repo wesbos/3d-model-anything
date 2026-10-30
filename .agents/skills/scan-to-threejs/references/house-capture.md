@@ -174,6 +174,14 @@ const y = fy * (-pc.y / -pc.z) + cy;              // image y (pixels, down)
 // in frame if 0 ≤ x < width && 0 ≤ y < height; prefer small |pc.z| and a view facing the surface
 ```
 
+Intrinsics are per photo: autofocus moves fx by a few percent (`camera.lensPosition` records the
+focus), so never reuse one photo's fx for another. Newer bundles also carry `motion`
+(velocity, rotation rate, `lateralSpeed`). The sensor reads out row by row, so a photo can look
+sharp yet be skewed. For precise alignment or measurement, prefer photos with the least expected
+smear over the exposure: `|angularVelocity| × fx × exposure` pixels, plus `lateralSpeed × fx ×
+exposure / depth` (rotation usually dominates).
+`manifest.camera` names the capture device and video/still formats.
+
 Write a small script that, for each wall or object, lists the 3 best photos (in frame, close,
 frontal). Look at those rather than scrolling through hundreds. Crop them for texture sampling
 (`ortho.py sample` works on any image if you pass pixel boxes via a quick PIL crop).
