@@ -1222,7 +1222,10 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
     var shot = Shot(frame: frame, buffer: buffer, blur: lastBlur ?? 0)
     shot.depth = DepthRecorder.grid(for: frame)
     shot.camera = cameraControl.state(for: frame)
-    save(shot, manual: true)
+    // a shutter tap isn't rate limited: you asked for that photo
+    guard highResolutionPhotos, highResSupported, !highResInFlight, !captureBudget.constrained,
+          ProcessInfo.processInfo.thermalState == .nominal else { return save(shot, manual: true) }
+    requestHighResolution(replacing: shot, manual: true)
   }
 
   /// Wait for accepted JPEG writes. A still request has a timeout; late callbacks are
@@ -1415,6 +1418,11 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
       save(held, manual: false)
       return
     }
+    requestHighResolution(replacing: held, manual: false)
+  }
+
+  /// Ask ARKit for a full-resolution still of `held`'s view; save whichever of the two is better.
+  private func requestHighResolution(replacing held: Shot, manual: Bool) {
     highResInFlight = true
     lastHighResRequest = CACurrentMediaTime()
     let requestID = UUID()
@@ -1425,7 +1433,7 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
         guard let self, self.highResRequestID == requestID else { return }
         self.highResInFlight = false
         self.highResRequestID = nil
-        guard !self.closed, !self.paused, self.captureReady,
+        guard !self.closed, !self.paused || manual, self.captureReady,
               self.phase == .scanning || self.phase == .finishingRoom else { return }
         guard let frame, let blur = self.blur(at: frame.timestamp, for: frame) else {
           if let error {
@@ -1433,11 +1441,11 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
             self.diagnostics.recordFailure(source: "high-resolution photo", chain: Diagnostics.errorChain(error), since: self.startedAt)
             self.sampleDiagnostics(force: true)
           }
-          self.save(held, manual: false)
+          self.save(held, manual: manual)
           return
         }
         guard case .normal = frame.camera.trackingState else {
-          self.save(held, manual: false)
+          self.save(held, manual: manual)
           return
         }
         let relative = blur / Float(frame.camera.imageResolution.width) * 1920
@@ -1445,16 +1453,16 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
         let sameView = simd_distance(heldView.position, hrView.position) < 0.2 && simd_dot(heldView.forward, hrView.forward) > cos(Float.pi / 15)
         if frame.camera.imageResolution.width > held.resolution.width, relative <= max(held.blur, Self.sharpBlur) * 1.2, sameView {
           guard let buffer = Self.copy(frame.capturedImage) else {
-            self.save(held, manual: false)
+            self.save(held, manual: manual)
             return
           }
           var shot = Shot(frame: frame, buffer: buffer, blur: blur)
           shot.depth = held.depth // depth from the video frame a moment earlier (same view)
           shot.highRes = true
           shot.camera = self.cameraControl.state(for: frame)
-          self.save(shot, manual: false)
+          self.save(shot, manual: manual)
         } else {
-          self.save(held, manual: false)
+          self.save(held, manual: manual)
         }
       }
     }
