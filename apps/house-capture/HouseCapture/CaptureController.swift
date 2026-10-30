@@ -1418,19 +1418,42 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
     guard let held = candidate else { return }
     candidate = nil
     guard held.blur <= Self.acceptableBlur else { return }
-    guard !captureBudget.constrained, allowHighResolution, highResolutionPhotos, highResSupported, !highResInFlight,
-          captureReady, phase == .scanning,
-          ProcessInfo.processInfo.thermalState == .nominal,
-          CACurrentMediaTime() - lastHighResRequest >= 3 else {
+    guard allowHighResolution, highResolutionPhotos, highResSupported, captureReady, phase == .scanning else {
       save(held, manual: false)
       return
     }
+    if let blocker = highResolutionBlocker() {
+      countHighResolution(blocker)
+      save(held, manual: false)
+      return
+    }
+    requestHighResolution(replacing: held)
+  }
+
+  /// Why a full-resolution still can't be asked for right now (nil: it can).
+  private func highResolutionBlocker() -> HighResolutionStats.Outcome? {
+    if ProcessInfo.processInfo.thermalState != .nominal { return .warm }
+    if captureBudget.constrained { return .constrained }
+    if highResInFlight { return .inFlight }
+    if CACurrentMediaTime() - lastHighResRequest < 3 { return .tooSoon }
+    return nil
+  }
+
+  private func countHighResolution(_ outcome: HighResolutionStats.Outcome) {
+    var stats = diagnostics.highResolution ?? HighResolutionStats()
+    stats.count(outcome)
+    diagnostics.highResolution = stats
+  }
+
+  /// Ask ARKit for a full-resolution still of `held`'s view; save whichever of the two is better.
+  private func requestHighResolution(replacing held: Shot) {
     highResInFlight = true
     lastHighResRequest = CACurrentMediaTime()
     let requestID = UUID()
     highResRequestID = requestID
+    countHighResolution(.requested)
     diagnostics.log("high-resolution photo requested", since: startedAt)
-    arSession.captureHighResolutionFrame { [weak self] frame, error in
+    captureHighResolutionFrame { [weak self] frame, error, custom in
       Task { @MainActor in
         guard let self, self.highResRequestID == requestID else { return }
         self.highResInFlight = false
@@ -1438,36 +1461,65 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
         guard !self.closed, !self.paused, self.captureReady,
               self.phase == .scanning || self.phase == .finishingRoom else { return }
         guard let frame, let blur = self.blur(at: frame.timestamp, for: frame) else {
+          self.countHighResolution(.failed)
           if let error {
-            self.highResSupported = false // don't keep asking
+            // custom settings failing isn't the camera failing: fall back to ARKit's defaults
+            if custom { self.diagnostics.highResolution?.customSettingsFailed = true } else { self.highResSupported = false } // don't keep asking
             self.diagnostics.recordFailure(source: "high-resolution photo", chain: Diagnostics.errorChain(error), since: self.startedAt)
             self.sampleDiagnostics(force: true)
           }
           self.save(held, manual: false)
           return
         }
+        let size = frame.camera.imageResolution
+        self.diagnostics.highResolution?.delivered("\(Int(size.width))x\(Int(size.height))")
         guard case .normal = frame.camera.trackingState else {
+          self.countHighResolution(.trackingLimited)
           self.save(held, manual: false)
           return
         }
-        let relative = blur / Float(frame.camera.imageResolution.width) * 1920
+        let relative = blur / Float(size.width) * 1920
         let heldView = PhotoView(transform: held.transform), hrView = PhotoView(transform: frame.camera.transform)
         let sameView = simd_distance(heldView.position, hrView.position) < 0.2 && simd_dot(heldView.forward, hrView.forward) > cos(Float.pi / 15)
-        if frame.camera.imageResolution.width > held.resolution.width, relative <= max(held.blur, Self.sharpBlur) * 1.2, sameView {
-          guard let buffer = Self.copy(frame.capturedImage) else {
-            self.save(held, manual: false)
-            return
-          }
-          var shot = Shot(frame: frame, buffer: buffer, blur: blur)
-          shot.depth = held.depth // depth from the video frame a moment earlier (same view)
-          shot.highRes = true
-          shot.camera = self.cameraControl.state(for: frame)
-          self.save(shot, manual: false)
-        } else {
+        let outcome: HighResolutionStats.Outcome =
+          size.width <= held.resolution.width ? .notLarger
+          : relative > max(held.blur, Self.sharpBlur) * 1.2 ? .notSharper
+          : !sameView ? .movedAway
+          : .kept
+        guard outcome == .kept, let buffer = Self.copy(frame.capturedImage) else {
+          self.countHighResolution(outcome == .kept ? .failed : outcome)
           self.save(held, manual: false)
+          return
         }
+        self.countHighResolution(.kept)
+        var shot = Shot(frame: frame, buffer: buffer, blur: blur)
+        shot.depth = held.depth // depth from the video frame a moment earlier (same view)
+        shot.highRes = true
+        shot.camera = self.cameraControl.state(for: frame)
+        self.save(shot, manual: false)
       }
     }
+  }
+
+  /// On iOS 26+, ask for the largest still the current camera format offers (ARKit's default
+  /// can be barely bigger than the video frame). `custom` says whether custom settings were used.
+  private func captureHighResolutionFrame(_ done: @escaping @Sendable (ARFrame?, Error?, _ custom: Bool) -> Void) {
+    if #available(iOS 26.0, *), diagnostics.highResolution?.customSettingsFailed != true,
+       let format = arSession.configuration?.videoFormat,
+       let device = ARWorldTrackingConfiguration.configurableCaptureDeviceForPrimaryCamera {
+      let offered = device.activeFormat.supportedMaxPhotoDimensions.map { ($0.width, $0.height) }
+      if let (w, h) = HighResolutionStats.largest(offered) {
+        let settings = format.defaultPhotoSettings
+        settings.maxPhotoDimensions = CMVideoDimensions(width: w, height: h)
+        if diagnostics.highResolution?.requestedSize == nil {
+          diagnostics.highResolution?.offeredSizes = offered.map { "\($0.0)x\($0.1)" }
+          diagnostics.highResolution?.requestedSize = "\(w)x\(h)"
+        }
+        arSession.captureHighResolutionFrame(using: settings) { frame, error in done(frame, error, true) }
+        return
+      }
+    }
+    arSession.captureHighResolutionFrame { frame, error in done(frame, error, false) }
   }
 
   /// Camera motion around `time` from the pose history: ~50 ms either side when the

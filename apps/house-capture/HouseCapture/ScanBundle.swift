@@ -193,7 +193,6 @@ struct ScanBundle {
     manifest.structureError = nil
     manifest.worldMap = nil
     manifest.worldMapStatus = nil
-    manifest.diagnostics = nil
     try output.writeManifest(manifest)
   }
 
@@ -282,6 +281,46 @@ struct Manifest: Codable {
   var camera: CaptureCamera?
 }
 
+/// How full-resolution stills went during a session
+struct HighResolutionStats: Codable {
+  enum Outcome: String {
+    case requested, kept
+    // asked for, then dropped in favor of the video frame
+    case failed, trackingLimited, notLarger, notSharper, movedAway
+    // not asked for
+    case warm, constrained, inFlight, tooSoon
+  }
+  var requested = 0
+  var kept = 0
+  var dropped: [String: Int] = [:]
+  var skipped: [String: Int] = [:]
+  /// "WxH" of every still the camera returned
+  var deliveredSizes: [String: Int] = [:]
+  /// still sizes the camera's current format offers (iOS 26+), and the one asked for
+  var offeredSizes: [String]?
+  var requestedSize: String?
+  /// the custom photo settings failed once, so ARKit's defaults were used after that
+  var customSettingsFailed: Bool?
+
+  mutating func count(_ outcome: Outcome) {
+    switch outcome {
+    case .requested: requested += 1
+    case .kept: kept += 1
+    case .warm, .constrained, .inFlight, .tooSoon: skipped[outcome.rawValue, default: 0] += 1
+    default: dropped[outcome.rawValue, default: 0] += 1
+    }
+  }
+
+  mutating func delivered(_ size: String) { deliveredSizes[size, default: 0] += 1 }
+
+  /// The largest offered still up to `maxWidth` (saved photos are scaled down anyway, and a
+  /// 48 MP still costs time and memory), or the smallest if all are wider.
+  static func largest(_ sizes: [(Int32, Int32)], maxWidth: Int32 = 4032) -> (Int32, Int32)? {
+    let area = { (s: (Int32, Int32)) in Int64(s.0) * Int64(s.1) }
+    return sizes.filter { $0.0 <= maxWidth }.max { area($0) < area($1) } ?? sizes.min { area($0) < area($1) }
+  }
+}
+
 /// What the capture session actually did, for debugging bundles after the fact
 struct Diagnostics: Codable {
   struct Jump: Codable {
@@ -310,6 +349,8 @@ struct Diagnostics: Codable {
   var resourceSamples: [ResourceSample]?
   var memoryWarnings: Int?
   var configurationChanges: Int?
+  /// full-resolution stills: asked for, kept, dropped or skipped (and why), sizes
+  var highResolution: HighResolutionStats?
 
   struct Failure: Codable, Sendable {
     var t: TimeInterval
