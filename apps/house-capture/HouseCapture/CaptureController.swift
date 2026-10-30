@@ -75,6 +75,10 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
   @Published private(set) var photoCount = 0
   private let autoPhotos = true
   @Published var highResolutionPhotos = false
+  /// experimental: ask for ARKit's 4K video format while scanning (see Video4K)
+  @Published var video4K = false
+  private var video4KRequestedRoom: Int?
+  private var video4KGaveUp = false
   @Published private(set) var trackingIssue: TrackingRecovery.Issue? = .starting
   @Published private(set) var sessionNeedsRestart = false
   @Published private(set) var recordingSaveFailed = false
@@ -1096,7 +1100,15 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
     guard let c = arSession.configuration as? ARWorldTrackingConfiguration else { return }
     let depthOK = !ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) || c.frameSemantics.contains(.sceneDepth)
     let meshOK = c.sceneReconstruction.contains(.meshWithClassification)
-    if meshOK, depthOK {
+    let format4K = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
+    let step = Video4K.step(enabled: video4K && !video4KGaveUp, current: c.videoFormat.imageResolution,
+                            target: format4K?.imageResolution, requestedThisRoom: video4KRequestedRoom == roomIndex)
+    if step == .reverted {
+      video4KGaveUp = true
+      diagnostics.video4K = "RoomPlan switched back to \(Int(c.videoFormat.imageResolution.width))x\(Int(c.videoFormat.imageResolution.height))"
+      diagnostics.log("4K video: \(diagnostics.video4K!)", since: startedAt)
+    }
+    if meshOK, depthOK, step != .request {
       if !meshReady {
         meshReady = true
         meshReadyAt = CACurrentMediaTime()
@@ -1118,6 +1130,14 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
     updated.initialWorldMap = nil
     updated.sceneReconstruction.insert(.meshWithClassification)
     if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) { updated.frameSemantics.insert(.sceneDepth) }
+    if step == .request, let format4K {
+      updated.videoFormat = format4K
+      video4KRequestedRoom = roomIndex
+      diagnostics.video4K = "requested \(Int(format4K.imageResolution.width))x\(Int(format4K.imageResolution.height))@\(format4K.framesPerSecond)"
+      diagnostics.log("4K video: \(diagnostics.video4K!)", since: startedAt)
+    } else if video4K, format4K == nil, diagnostics.video4K == nil {
+      diagnostics.video4K = "no 4K format on this device"
+    }
     meshReady = false
     diagnostics.configurationChanges = (diagnostics.configurationChanges ?? 0) + 1
     diagnostics.log("enable mesh/depth #\(diagnostics.configurationChanges!): reconstruction \(c.sceneReconstruction.rawValue)→\(updated.sceneReconstruction.rawValue), semantics \(c.frameSemantics.rawValue)→\(updated.frameSemantics.rawValue)", since: startedAt)
@@ -1545,8 +1565,8 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
   nonisolated private static let acceptableBlur: Float = 6
   /// m² of not-yet-covered surface a photo must add
   private static let minimumGain: Float = 0.06
-  /// long edge of saved photos; full-res stills are scaled down to this
-  private static let maxPhotoEdge: CGFloat = 3024
+  /// long edge of saved photos (a 4K video frame stays whole); larger stills are scaled down to it
+  private static let maxPhotoEdge: CGFloat = 3840
 
   private func save(_ shot: Shot, manual: Bool) {
     // auto photos wait their turn; manual taps always go through (within reason)

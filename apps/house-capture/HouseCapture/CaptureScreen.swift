@@ -263,6 +263,10 @@ struct CaptureScreen: View {
         .font(.subheadline)
       Text("Regular photos use camera frames for a lighter scan. High-resolution photos add processing and are limited to one request every 3 seconds while the phone is cool. The shutter always saves a regular photo.")
         .font(.caption).foregroundStyle(.secondary)
+      Toggle("4K video (experimental)", isOn: $controller.video4K)
+        .font(.subheadline)
+      Text("Scans in 4K at 30 frames a second, so every photo has 4× the pixels. Uses more power and warms the phone sooner; RoomPlan may switch back to its own format.")
+        .font(.caption).foregroundStyle(.secondary)
       Button {
         controller.startRoom()
       } label: {

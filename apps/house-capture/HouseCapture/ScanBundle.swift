@@ -351,6 +351,8 @@ struct Diagnostics: Codable {
   var configurationChanges: Int?
   /// full-resolution stills: asked for, kept, dropped or skipped (and why), sizes
   var highResolution: HighResolutionStats?
+  /// the experimental 4K video setting: what was asked for and whether RoomPlan kept it
+  var video4K: String?
 
   struct Failure: Codable, Sendable {
     var t: TimeInterval

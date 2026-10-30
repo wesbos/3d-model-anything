@@ -51,3 +51,15 @@ final class CameraControl {
     )
   }
 }
+
+/// Experimental: run the scan in ARKit's 4K video format (3840×2880 at 30 fps on iPhone 15 Pro)
+/// so every frame, and so every photo, has 4× the pixels. RoomPlan picks its own format; the app
+/// asks once per room and, if RoomPlan switches back, leaves it be.
+enum Video4K {
+  enum Step: Equatable { case keep, request, reverted }
+
+  static func step(enabled: Bool, current: CGSize, target: CGSize?, requestedThisRoom: Bool) -> Step {
+    guard enabled, let target, current != target else { return .keep }
+    return requestedThisRoom ? .reverted : .request
+  }
+}

@@ -86,6 +86,7 @@ final class SelfTest {
       try roomExperience()
       try captureDiagnostics()
       try highResolutionStats()
+      video4KChoice()
       try await previewNormals()
       try await photoTextures()
       houseID = try await tests()
@@ -102,6 +103,15 @@ final class SelfTest {
     }
     log(failed == 0 ? "PASS \(passed)/\(passed)" : "FAILED \(failed) of \(passed + failed)")
     return failed == 0
+  }
+
+  private func video4KChoice() {
+    let hd = CGSize(width: 1920, height: 1440), uhd = CGSize(width: 3840, height: 2880)
+    expect(Video4K.step(enabled: false, current: hd, target: uhd, requestedThisRoom: false) == .keep, "4K off keeps RoomPlan's format")
+    expect(Video4K.step(enabled: true, current: hd, target: nil, requestedThisRoom: false) == .keep, "no 4K format on this phone keeps RoomPlan's format")
+    expect(Video4K.step(enabled: true, current: hd, target: uhd, requestedThisRoom: false) == .request, "4K on asks for the 4K format once")
+    expect(Video4K.step(enabled: true, current: uhd, target: uhd, requestedThisRoom: true) == .keep, "4K in effect needs nothing more")
+    expect(Video4K.step(enabled: true, current: hd, target: uhd, requestedThisRoom: true) == .reverted, "RoomPlan switching back is noticed, not fought")
   }
 
   private func highResolutionStats() throws {
