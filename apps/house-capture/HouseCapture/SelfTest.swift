@@ -85,6 +85,7 @@ final class SelfTest {
       trackingRecovery()
       try roomExperience()
       try captureDiagnostics()
+      try highResolutionStats()
       try await previewNormals()
       try await photoTextures()
       houseID = try await tests()
@@ -101,6 +102,24 @@ final class SelfTest {
     }
     log(failed == 0 ? "PASS \(passed)/\(passed)" : "FAILED \(failed) of \(passed + failed)")
     return failed == 0
+  }
+
+  private func highResolutionStats() throws {
+    var stats = HighResolutionStats()
+    stats.count(.requested); stats.count(.requested); stats.count(.kept)
+    stats.count(.notSharper); stats.count(.notSharper); stats.count(.warm)
+    stats.delivered("4032x3024")
+    expect(stats.requested == 2 && stats.kept == 1, "high-res attempts and kept stills are counted")
+    expect(stats.dropped == ["notSharper": 2] && stats.skipped == ["warm": 1], "dropped stills and skipped attempts are counted by reason")
+    expect(stats.deliveredSizes == ["4032x3024": 1], "delivered still sizes are counted")
+    let decoded = try JSONDecoder().decode(HighResolutionStats.self, from: JSONEncoder().encode(stats))
+    expect(decoded.dropped == stats.dropped && decoded.kept == 1, "high-res stats survive JSON")
+    expect(try JSONDecoder().decode(Diagnostics.self, from: Data("{\"worldJumps\":[]}".utf8)).highResolution == nil, "older diagnostics have no high-res stats")
+
+    let sizes: [(Int32, Int32)] = [(2016, 1512), (8064, 6048), (4032, 3024)]
+    expect(HighResolutionStats.largest(sizes)?.0 == 4032, "the largest offered still up to 4032 wide is picked")
+    expect(HighResolutionStats.largest([(8064, 6048), (5712, 4284)])?.0 == 5712, "if every size is wider, the smallest is picked")
+    expect(HighResolutionStats.largest([]) == nil, "no offered sizes picks none")
   }
 
   private func coveragePerformance() async throws {
@@ -399,13 +418,18 @@ final class SelfTest {
       try Data([7, 8, 9]).write(to: source.file(room.mesh!.file))
     }
     for path in ["worldmap.arworldmap", "structure.json", "structure.usdz"] { try Data([0]).write(to: source.file(path)) }
+    var sourceDiagnostics = Diagnostics()
+    sourceDiagnostics.highResolution = HighResolutionStats()
+    sourceDiagnostics.highResolution?.count(.requested)
     try source.writeManifest(Manifest(createdAt: Date(), device: "test", systemVersion: "0", house: houseID, session: s1, zone: zone1.id,
                                       worldMap: "worldmap.arworldmap", rooms: roomRecords, structure: "structure.json", mesh: roomRecords[0].mesh,
-                                      photos: "photos/photos.json", photoCount: 2, depthFrames: "depth/frames.json", depthFrameCount: 2))
+                                      photos: "photos/photos.json", photoCount: 2, depthFrames: "depth/frames.json", depthFrameCount: 2,
+                                      diagnostics: sourceDiagnostics))
     let exported = ScanBundle(url: exportTest.appendingPathComponent("export"))
     try source.exportRoom(index: 2, name: "Renamed room", to: exported.url)
     expect(exported.manifest?.rooms.map(\.index) == [2] && exported.manifest?.rooms.first?.name == "Renamed room", "room export preserves nonzero index and current name")
     expect(exported.photos.map(\.room) == [2] && exported.depthFrames.map(\.room) == [2], "room export filters photo and depth indexes")
+    expect(exported.manifest?.diagnostics?.highResolution?.requested == 1, "room export keeps the session's capture diagnostics")
     expect(exported.manifest?.photoCount == 1 && exported.manifest?.depthFrameCount == 1 && exported.manifest?.mesh?.file == "mesh/room-2.ply", "room export updates counts and mesh reference")
     expect(exported.manifest?.worldMap == nil && exported.manifest?.structure == nil, "room export clears session-wide references")
     for path in [photo.file, depth.file, depth.confidence, depth.rgb!, "rooms/room-2.json", "mesh/room-2.ply"] {
