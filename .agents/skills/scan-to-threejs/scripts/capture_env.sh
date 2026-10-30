@@ -18,3 +18,7 @@ else
 fi
 : ${CAP_URL:=http://localhost:5173}
 : ${CAP_SESSION:=scan-to-threejs}
+# Each session's daemon keeps a headless Chrome (1-2 GB with WebGL) alive and detaches from its caller,
+# so a worker that stops without closing it would leak it for agent-browser's default hour. Exit after
+# 10 idle minutes instead; the next capture starts a fresh daemon. Applies when a daemon starts.
+export AGENT_BROWSER_IDLE_TIMEOUT_MS=${AGENT_BROWSER_IDLE_TIMEOUT_MS:-600000}
