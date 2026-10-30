@@ -1456,6 +1456,11 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
     if captureBudget.constrained { return .constrained }
     if highResInFlight { return .inFlight }
     if CACurrentMediaTime() - lastHighResRequest < 3 { return .tooSoon }
+    // e.g. 4K video: the stills it offers are the frame's own size, so asking only costs time
+    if let video = arSession.configuration?.videoFormat.imageResolution,
+       let device = ARWorldTrackingConfiguration.configurableCaptureDeviceForPrimaryCamera,
+       let best = HighResolutionStats.largest(device.activeFormat.supportedMaxPhotoDimensions.map { ($0.width, $0.height) }),
+       CGFloat(best.0) <= video.width { return .noLargerSize }
     return nil
   }
 

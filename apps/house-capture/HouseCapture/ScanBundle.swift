@@ -288,7 +288,7 @@ struct HighResolutionStats: Codable {
     // asked for, then dropped in favor of the video frame
     case failed, trackingLimited, notLarger, notSharper, movedAway
     // not asked for
-    case warm, constrained, inFlight, tooSoon
+    case warm, constrained, inFlight, tooSoon, noLargerSize
   }
   var requested = 0
   var kept = 0
@@ -306,7 +306,7 @@ struct HighResolutionStats: Codable {
     switch outcome {
     case .requested: requested += 1
     case .kept: kept += 1
-    case .warm, .constrained, .inFlight, .tooSoon: skipped[outcome.rawValue, default: 0] += 1
+    case .warm, .constrained, .inFlight, .tooSoon, .noLargerSize: skipped[outcome.rawValue, default: 0] += 1
     default: dropped[outcome.rawValue, default: 0] += 1
     }
   }

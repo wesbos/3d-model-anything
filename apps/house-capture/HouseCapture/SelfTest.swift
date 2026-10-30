@@ -117,10 +117,10 @@ final class SelfTest {
   private func highResolutionStats() throws {
     var stats = HighResolutionStats()
     stats.count(.requested); stats.count(.requested); stats.count(.kept)
-    stats.count(.notSharper); stats.count(.notSharper); stats.count(.warm)
+    stats.count(.notSharper); stats.count(.notSharper); stats.count(.warm); stats.count(.noLargerSize)
     stats.delivered("4032x3024")
     expect(stats.requested == 2 && stats.kept == 1, "high-res attempts and kept stills are counted")
-    expect(stats.dropped == ["notSharper": 2] && stats.skipped == ["warm": 1], "dropped stills and skipped attempts are counted by reason")
+    expect(stats.dropped == ["notSharper": 2] && stats.skipped == ["warm": 1, "noLargerSize": 1], "dropped stills and skipped attempts are counted by reason")
     expect(stats.deliveredSizes == ["4032x3024": 1], "delivered still sizes are counted")
     let decoded = try JSONDecoder().decode(HighResolutionStats.self, from: JSONEncoder().encode(stats))
     expect(decoded.dropped == stats.dropped && decoded.kept == 1, "high-res stats survive JSON")
