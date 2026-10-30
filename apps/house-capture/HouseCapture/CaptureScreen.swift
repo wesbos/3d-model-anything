@@ -259,9 +259,9 @@ struct CaptureScreen: View {
           .font(.caption2)
           .foregroundStyle(.secondary)
       }
-      Toggle("High-resolution automatic photos", isOn: $controller.highResolutionPhotos)
+      Toggle("High-resolution photos", isOn: $controller.highResolutionPhotos)
         .font(.subheadline)
-      Text("Regular photos use camera frames for a lighter scan. High-resolution photos add processing and are limited to one request every 3 seconds while the phone is cool. The shutter always saves a regular photo.")
+      Text("Regular photos use camera frames for a lighter scan. High-resolution photos add processing: automatic ones are limited to one request every 3 seconds while the phone is cool, and the shutter asks for one whenever the phone is cool.")
         .font(.caption).foregroundStyle(.secondary)
       Button {
         controller.startRoom()
