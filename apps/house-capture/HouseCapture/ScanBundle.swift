@@ -482,7 +482,8 @@ struct CaptureCamera: Codable {
   var videoWidth: Int
   var videoHeight: Int
   var framesPerSecond: Int
-  /// size ARKit recommends for full-resolution stills; nil if unsupported
+  /// the video format ARKit recommends when taking full-resolution stills (not the stills' size,
+  /// which is in each photo's width/height); nil if unsupported
   var highResolutionWidth: Int?
   var highResolutionHeight: Int?
   var autoFocus: Bool
