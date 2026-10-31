@@ -26,14 +26,6 @@ Then select **HouseCaptureDev** in the toolbar. You can also find it under
 Regeneration can overwrite signing settings entered only in Xcode. Preserve your
 existing team and bundle identifier before regenerating, or reselect them afterward.
 
-## If the icon or name is still unchanged
-
-1. Confirm **HouseCaptureDev** is selected in the toolbar.
-2. Open **Product → Scheme → Edit Scheme…**.
-3. Click **Run** in the window's left sidebar, then the **Info** tab.
-4. Set **Build Configuration** to **Development** and click **Close**.
-5. Select your device and click **Run** (▶) again to install the updated app.
-
 Building alone does not install the app. The **HouseCapture** scheme uses Release
 by default and shows the original icon and name.
 
