@@ -29,10 +29,10 @@ targets:
       configs:
         Debug:
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDev
-          APP_DISPLAY_NAME: 3D Model Dev
+          APP_DISPLAY_NAME: 3D Model Anything Debug
         Development:
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDev
-          APP_DISPLAY_NAME: 3D Model Dev
+          APP_DISPLAY_NAME: 3D Model Anything Dev
     info:
       path: HouseCapture/Info.plist
       properties:
@@ -49,7 +49,6 @@ targets:
         UIRequiresFullScreen: true
         UIStatusBarHidden: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown]
 schemes:
   HouseCapture:
     build:
