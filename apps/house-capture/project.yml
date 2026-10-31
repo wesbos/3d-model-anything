@@ -1,4 +1,8 @@
 name: HouseCapture
+configs:
+  Debug: debug
+  Development: release
+  Release: release
 options:
   bundleIdPrefix: com.wesbos
   deploymentTarget:
@@ -19,12 +23,20 @@ targets:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.wesbos.housecapture
+        APP_DISPLAY_NAME: 3D Model Anything
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
+      configs:
+        Debug:
+          ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDev
+          APP_DISPLAY_NAME: 3D Model Anything Debug
+        Development:
+          ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDev
+          APP_DISPLAY_NAME: 3D Model Anything Dev
     info:
       path: HouseCapture/Info.plist
       properties:
-        CFBundleDisplayName: 3D Model Anything
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
         NSCameraUsageDescription: 3D Model Anything uses the camera and LiDAR scanner to measure your rooms and take reference photos.
         # Non-LiDAR devices can import and review scans; capture is checked at runtime.
         ITSAppUsesNonExemptEncryption: false
@@ -37,4 +49,25 @@ targets:
         UIRequiresFullScreen: true
         UIStatusBarHidden: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown]
+        UISupportedInterfaceOrientations~ipad:
+          [
+            UIInterfaceOrientationPortrait,
+            UIInterfaceOrientationPortraitUpsideDown,
+          ]
+schemes:
+  HouseCapture:
+    build:
+      targets:
+        HouseCapture: all
+    run:
+      config: Release
+    archive:
+      config: Release
+  HouseCaptureDev:
+    build:
+      targets:
+        HouseCapture: all
+    run:
+      config: Development
+    archive:
+      config: Development
