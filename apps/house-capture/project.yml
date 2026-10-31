@@ -49,6 +49,11 @@ targets:
         UIRequiresFullScreen: true
         UIStatusBarHidden: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          [
+            UIInterfaceOrientationPortrait,
+            UIInterfaceOrientationPortraitUpsideDown,
+          ]
 schemes:
   HouseCapture:
     build:
