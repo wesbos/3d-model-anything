@@ -20,11 +20,21 @@ xcodebuild -project HouseCapture.xcodeproj -scheme HouseCapture -configuration R
   -destination 'generic/platform=iOS' -derivedDataPath build -allowProvisioningUpdates build
 ```
 
-Or open the project in Xcode, pick your team under *Signing & Capabilities*, and run on the phone.
+Or open the project in Xcode, pick your team under _Signing & Capabilities_, and run on the phone.
 
-## Development appearance
+## Run a development build on your device
 
-For a distinct local app icon and name, see [Development icon and scheme](docs/development-icon.md).
+1. Open `HouseCapture.xcodeproj` in Xcode.
+2. Select **HouseCaptureDev** in the toolbar beside the Run button.
+3. Select your connected iPhone or iPad.
+4. Click **Run** (▶) to build and install.
+
+The app appears as **3D Model Anything Dev** with the development icon. This build
+is optimized for scanning. The terminal command above builds Release only; it does
+not install the app.
+
+See [Development scheme](docs/development-scheme.md) if the scheme is missing or
+the phone still shows the original icon and name.
 
 ## Rooms and scanning
 
@@ -37,7 +47,7 @@ Swipe left on a room to move it and its history to **Recently Deleted**. Restore
 Every finished room is written to house.json and the bundle right away and the map is re-saved
 after each room, so a crash costs at most the room in progress.
 
-**Sharing**: open a saved room → *Share room (.zip)* → AirDrop. This exports the active scan's layout, mesh, photos and depth, excluding other scans and session-wide structures/maps. Original room indices and poses are preserved; the saved mesh may include nearby surfaces from the same capture session. To share an older version, select *Use this scan* first. The house screen's *Share whole house* and each session's *Share* remain available.
+**Sharing**: open a saved room → _Share room (.zip)_ → AirDrop. This exports the active scan's layout, mesh, photos and depth, excluding other scans and session-wide structures/maps. Original room indices and poses are preserved; the saved mesh may include nearby surfaces from the same capture session. To share an older version, select _Use this scan_ first. The house screen's _Share whole house_ and each session's _Share_ remain available.
 Everything is also in the Files app under 3D Model Anything.
 
 **Photo preview** maps cropped photo textures onto the mesh, preserving image detail between
@@ -89,7 +99,7 @@ out a device tracking failure; preserve the failing session and correlate its ti
 
 `manifest.diagnostics`: RoomPlan's and the scan's AR configurations, frame-to-frame world jumps,
 white balance, an event log (tracking / mapping status changes, pauses, map saves), how
-relocalization went (seconds to *normal* / *verified*, residual) and periodic live-vs-saved mesh checks.
+relocalization went (seconds to _normal_ / _verified_, residual) and periodic live-vs-saved mesh checks.
 
 ## Launch arguments (developer)
 
