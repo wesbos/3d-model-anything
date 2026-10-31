@@ -15,10 +15,13 @@ targets:
     type: application
     platform: iOS
     sources: [HouseCapture]
+    configFiles:
+      Debug: Signing.xcconfig
+      Release: Signing.xcconfig
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        PRODUCT_BUNDLE_IDENTIFIER: com.wesbos.housecapture
+        PRODUCT_BUNDLE_IDENTIFIER: $(HOUSE_CAPTURE_BUNDLE_ID)
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
     info:
