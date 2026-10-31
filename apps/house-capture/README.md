@@ -22,6 +22,8 @@ xcodebuild -project HouseCapture.xcodeproj -scheme HouseCapture -configuration R
 
 Or open the project in Xcode, pick your team under *Signing & Capabilities*, and run on the phone.
 
+For signing settings that survive project regeneration, see [Local signing setup](docs/signing.md).
+
 ## Rooms and scanning
 
 The Fieldwork house screen shows a numbered room library with previews rendered from saved scans. Open a room for an interactive 3D preview, photo-detail view, sharing, and scan history. Warm paper surfaces, ink typography, orange actions and ruled sections carry through the house library and room pages. Sessions and Recently Deleted are collapsed below the room library. Thumbnail rendering is serialized and caches only small images; scans without cached photo colours use neutral clay geometry. Tap **Scan a room** to begin; internal tracking groups are created automatically. Open a saved room and choose **Continue scanning from this room** to recognize that location before scanning nearby. Maps of 35 MB or more, or groups with four rooms, automatically start fresh. Matching room names within the house adds to the room's history, even across internal tracking groups.
