@@ -143,7 +143,14 @@ final class CaptureController: NSObject, ObservableObject, RoomCaptureSessionDel
     }
     return scan
   }()
-  private lazy var depthRecorder = DepthRecorder(bundle: bundle)
+  private lazy var depthRecorder: DepthRecorder = {
+    let recorder = DepthRecorder(bundle: bundle)
+    recorder.onWriteFailure = { [weak self] error in
+      guard let self else { return }
+      self.diagnostics.recordFailure(source: "depth frame", chain: Diagnostics.errorChain(error), since: self.startedAt)
+    }
+    return recorder
+  }()
   private let cameraControl = CameraControl()
   private var meshReadyAt: TimeInterval?
   /// mesh export taken just before RoomPlan stops (stopping reconfigures the session)
