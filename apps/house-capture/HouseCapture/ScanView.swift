@@ -329,9 +329,14 @@ final class DepthRecorder: @unchecked Sendable {
   private var next = 0
   private var inFlight = 0
   private let ci = CIContext()
+  private let store: DepthFrameStore
+  /// Called on the main queue when a frame could not be written; that frame is left out of
+  /// frames.json so the index never points at a missing or half-written file.
+  var onWriteFailure: ((Error) -> Void)?
 
   init(bundle: ScanBundle) {
     self.bundle = bundle
+    store = DepthFrameStore(bundle: bundle)
   }
 
   /// Call every frame; keeps one when the camera has moved or turned enough (≤ 5/s)
@@ -365,23 +370,29 @@ final class DepthRecorder: @unchecked Sendable {
     let confData = depth.confidenceMap.map(Self.bytes)
     inFlight += 1
     queue.async {
-      try? ((try? (depthData as NSData).compressed(using: .zlib)) as Data? ?? depthData).write(to: self.bundle.file(record.file))
-      try? confData?.write(to: self.bundle.file(record.confidence))
-      if let cg, let rgb = record.rgb, let dest = CGImageDestinationCreateWithURL(self.bundle.file(rgb) as CFURL, "public.jpeg" as CFString, 1, nil) {
-        CGImageDestinationAddImage(dest, cg, [kCGImageDestinationLossyCompressionQuality: 0.8] as CFDictionary)
-        CGImageDestinationFinalize(dest)
+      do {
+        try self.store.write(depth: depthData, confidence: confData, depthPath: record.file, confidencePath: record.confidence)
+      } catch {
+        DispatchQueue.main.async {
+          self.inFlight -= 1
+          self.onWriteFailure?(error)
+        }
+        return
+      }
+      var stored = record
+      if let cg, let rgb = record.rgb, !self.store.writeColor(cg, to: rgb) {
+        stored.rgb = nil // depth stays usable; never list an image that is not there
+        stored.rgbIntrinsics = nil
       }
       DispatchQueue.main.async {
-        self.records.append(record)
+        self.records.append(stored)
         self.inFlight -= 1
       }
     }
   }
 
   func save() throws {
-    let e = JSONEncoder()
-    e.outputFormatting = [.prettyPrinted]
-    try e.encode(records).write(to: bundle.file("depth/frames.json"))
+    try bundle.writeJSON(records, to: "depth/frames.json")
   }
 
   func discard(room: Int) {

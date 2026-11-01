@@ -48,7 +48,7 @@ struct ScanBundle {
   // MARK: rooms + structure
 
   func saveRoom(_ room: CapturedRoom, index: Int) throws {
-    try encoder.encode(room).write(to: file("rooms/room-\(index).json"))
+    try writeJSON(room, to: "rooms/room-\(index).json")
     try? room.export(to: file("rooms/room-\(index).usdz"), exportOptions: .parametric)
     // RoomPlan's detailed object shapes (legs, backs, arms) instead of boxes
     try? room.export(to: file("rooms/room-\(index)-mesh.usdz"), exportOptions: .mesh)
@@ -94,13 +94,13 @@ struct ScanBundle {
   // MARK: photos
 
   func savePhotos(_ photos: [PhotoRecord]) throws {
-    try encoder.encode(photos).write(to: file("photos/photos.json"))
+    try writeJSON(photos, to: "photos/photos.json")
   }
 
   // MARK: manifest
 
   func writeManifest(_ manifest: Manifest) throws {
-    try encoder.encode(manifest).write(to: file("manifest.json"), options: .atomic)
+    try writeJSON(manifest, to: "manifest.json")
   }
 
   var manifest: Manifest? {
@@ -181,7 +181,7 @@ struct ScanBundle {
       if let rgb = frame.rgb { try copy(rgb) }
     }
     try output.savePhotos(selectedPhotos)
-    try encoder.encode(selectedDepth).write(to: output.file("depth/frames.json"))
+    try output.writeJSON(selectedDepth, to: "depth/frames.json")
     room.name = name
     manifest.rooms = [room]
     manifest.photos = "photos/photos.json"
@@ -195,6 +195,12 @@ struct ScanBundle {
     manifest.worldMapStatus = nil
     manifest.diagnostics = nil
     try output.writeManifest(manifest)
+  }
+
+  /// Writes an index through a temporary file renamed over the destination, so a crash or a
+  /// power loss mid-write leaves the previous version instead of truncated JSON.
+  func writeJSON<T: Encodable>(_ value: T, to path: String) throws {
+    try encoder.encode(value).write(to: file(path), options: .atomic)
   }
 
   private var encoder: JSONEncoder {

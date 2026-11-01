@@ -672,7 +672,7 @@ final class CoverageEngine: @unchecked Sendable {
       }
       offset += UInt32(a.world.count)
     }
-    try data.write(to: url)
+    try data.write(to: url, options: .atomic)
     return (vCount, fCount, total > 0 ? covered / total : 0)
   }
 
