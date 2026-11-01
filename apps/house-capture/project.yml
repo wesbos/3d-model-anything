@@ -38,3 +38,28 @@ targets:
         UIStatusBarHidden: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown]
+  HouseCaptureTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [HouseCaptureTests]
+    dependencies:
+      - target: HouseCapture
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.wesbos.housecapture.tests
+schemes:
+  HouseCapture:
+    build:
+      targets:
+        HouseCapture: all
+        HouseCaptureTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      coverageTargets: [HouseCapture]
+      targets: [HouseCaptureTests]
+    archive:
+      config: Release
