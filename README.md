@@ -48,6 +48,8 @@ Start with [the format guide](.agents/skills/scan-to-threejs/references/house-ca
 
 A new room goes in `demos/<id>/` and is registered in `demos/index.ts`. The office example retains its earlier reconstruction layers (`office-v2`, `office-latest`, `office-v4`) to preserve the final geometry.
 
+Blender export (glTF, deterministic): see [docs/export.md](docs/export.md).
+
 ## Privacy and licensing
 
 Only the office example is distributed. No other rooms, connected-house layout, original scan bundles, or development Git history are included. Keep your captures private; inspect assets before publishing your own demo.

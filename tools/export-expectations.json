@@ -1,0 +1,22 @@
+{
+  "defaults": {
+    "topLevel": ["shell", "lights"],
+    "minWalls": 1,
+    "minLights": 1,
+    "minPhotos": 1,
+    "maxBytes": { "model": 30000000, "lidar": 30000000, "photos": 5000000 },
+    "meshCountSlack": 0.02,
+    "maxMeshShareOfTriangles": 0.25,
+    "maxDegenerateFraction": 0.01,
+    "alignment": { "samples": 4000, "p50Max": 0.07, "within10cmMin": 0.6, "floorTolerance": 0.04, "bboxTolerance": 1.5 }
+  },
+  "rooms": {
+    "office-v4": {
+      "topLevel": ["shell", "props", "lights"],
+      "minWalls": 10,
+      "minLights": 7,
+      "maxDegenerateFraction": 0.08,
+      "maxBytes": { "model": 160000000, "lidar": 30000000, "photos": 5000000 }
+    }
+  }
+}

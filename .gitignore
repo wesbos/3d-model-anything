@@ -12,6 +12,8 @@ data/captures-in/
 data/captures/
 data/recordings/
 data/scans/
+# generated glTF exports (npm run export:all)
+data/exports/
 apps/house-capture/release/screenshots/
 
 HouseCapture.xcodeproj/

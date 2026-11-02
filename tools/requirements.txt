@@ -1,0 +1,4 @@
+# Python stages of the capture pipeline (pip install -r tools/requirements.txt)
+numpy==2.5.4
+open3d==0.20.0
+pillow==13.0.0
