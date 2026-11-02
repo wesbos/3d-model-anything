@@ -7,6 +7,9 @@
     "dev": "vite --config apps/room-viewer/vite.config.ts",
     "build": "tsc && vite build --config apps/room-viewer/vite.config.ts",
     "preview": "vite preview --config apps/room-viewer/vite.config.ts",
+    "export:room": "node tools/export-room.mjs",
+    "export:all": "node tools/export-room.mjs --all",
+    "export:check": "node tools/export-check.mjs",
     "textures": "python3 .agents/skills/scan-to-threejs/scripts/fetch_textures.py"
   },
   "dependencies": {
