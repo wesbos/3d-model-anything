@@ -1,4 +1,5 @@
 import ARKit
+import AVFoundation
 import SwiftUI
 import simd
 
@@ -39,6 +40,44 @@ final class SelfTest {
 
   private func expect(_ ok: Bool, _ what: String) {
     if ok { passed += 1; log("ok   \(what)") } else { failed += 1; log("FAIL \(what)") }
+  }
+
+  private func whiteBalanceSafety() {
+    func gains(_ r: Float, _ g: Float = 1, _ b: Float = 1) -> AVCaptureDevice.WhiteBalanceGains {
+      .init(redGain: r, greenGain: g, blueGain: b)
+    }
+    expect(CameraControl.validGains(gains(1, 2, 4), maximum: 4) == [1, 2, 4], "white balance accepts inclusive device bounds")
+    for value: Float in [.nan, .infinity, -.infinity, 0, 0.99, 4.01] {
+      for v in [gains(value), gains(1, value), gains(1, 1, value)] {
+        expect(CameraControl.validGains(v, maximum: 4) == nil, "white balance rejects invalid channel \(value)")
+      }
+    }
+    for maximum: Float in [.nan, .infinity, -.infinity, 0, 0.99] {
+      expect(CameraControl.validGains(gains(1), maximum: maximum) == nil, "white balance rejects invalid device maximum")
+    }
+    let missing = CameraControl(whiteBalanceDevice: { nil })
+    missing.lockWhiteBalance()
+    expect(!missing.whiteBalanceLocked, "missing camera leaves capture unlocked")
+    let device = WhiteBalanceTestDevice()
+    let control = CameraControl(whiteBalanceDevice: { device })
+    device.supportsLock = false
+    control.lockWhiteBalance(); control.lockWhiteBalance()
+    expect(device.writes.isEmpty && device.locks == 1 && device.unlocks == 1, "unsupported lock writes nothing and is attempted only once per room")
+    control.unlock(); device.supportsLock = true; device.deviceWhiteBalanceGains = gains(.nan)
+    control.lockWhiteBalance()
+    expect(device.writes.isEmpty && !control.whiteBalanceLocked, "invalid camera gains leave mode unchanged")
+    control.unlock(); device.deviceWhiteBalanceGains = gains(2); device.failLock = true
+    control.lockWhiteBalance()
+    expect(device.writes.isEmpty && device.unlocks == 2, "configuration failure performs no mode write or unmatched unlock")
+    control.unlock(); device.failLock = false; control.lockWhiteBalance()
+    expect(control.whiteBalanceLocked && device.writes == [.locked], "supported valid camera locks")
+    device.failLock = true; control.unlock()
+    expect(control.whiteBalanceLocked && device.writes == [.locked], "failed unlock retains truthful state without unsafe write")
+    device.failLock = false; device.supportsAuto = false; control.unlock()
+    expect(control.whiteBalanceLocked && device.writes == [.locked], "unsupported automatic mode is never set")
+    device.supportsAuto = true; control.unlock()
+    expect(!control.whiteBalanceLocked && device.writes == [.locked, .continuousAutoWhiteBalance], "automatic mode restored after access recovers")
+    expect(device.unsafeWrites == 0, "all camera mode writes hold configuration access")
   }
 
   private func roomExperience() throws {
@@ -82,6 +121,7 @@ final class SelfTest {
     var houseID: String?
     do {
       try await coveragePerformance()
+      whiteBalanceSafety()
       trackingRecovery()
       try roomExperience()
       try captureDiagnostics()
@@ -710,4 +750,30 @@ final class SelfTest {
                                       timestamp: 1.05, width: w, height: h, transform: pose.columnMajor, intrinsics: [186.7, 0, 0, 0, 186.7, 0, 128, 96, 1])
     try JSONEncoder().encode([record]).write(to: bundle.file("depth/frames.json"))
   }
+}
+
+@MainActor
+private final class WhiteBalanceTestDevice: WhiteBalanceDevice {
+  var deviceWhiteBalanceGains = AVCaptureDevice.WhiteBalanceGains(redGain: 1, greenGain: 1, blueGain: 1)
+  var maxWhiteBalanceGain: Float = 4
+  var supportsLock = true
+  var supportsAuto = true
+  var failLock = false
+  var locks = 0
+  var unlocks = 0
+  var unsafeWrites = 0
+  var writes: [AVCaptureDevice.WhiteBalanceMode] = []
+  private var hasAccess = false
+  var whiteBalanceMode: AVCaptureDevice.WhiteBalanceMode = .continuousAutoWhiteBalance {
+    didSet { if !hasAccess { unsafeWrites += 1 }; writes.append(whiteBalanceMode) }
+  }
+  func isWhiteBalanceModeSupported(_ mode: AVCaptureDevice.WhiteBalanceMode) -> Bool {
+    mode == .locked ? supportsLock : supportsAuto
+  }
+  func lockForConfiguration() throws {
+    locks += 1
+    if failLock { throw CocoaError(.fileReadNoPermission) }
+    hasAccess = true
+  }
+  func unlockForConfiguration() { unlocks += 1; hasAccess = false }
 }

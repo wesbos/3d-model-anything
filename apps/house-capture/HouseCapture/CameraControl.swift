@@ -1,49 +1,94 @@
 import ARKit
 import AVFoundation
 
-/// Keeps color consistent across a scan: once auto white balance has settled, lock it, so
-/// the same wall has the same color in every photo. Exposure stays automatic (a locked
-/// exposure picked in a bright corner would crush the dark ones), but ISO + shutter are
-/// recorded with every photo and depth frame so brightness can be normalized later.
+// Kept small so the configuration/fallback path can be exercised without camera hardware.
+@MainActor
+protocol WhiteBalanceDevice: AnyObject {
+  var deviceWhiteBalanceGains: AVCaptureDevice.WhiteBalanceGains { get }
+  var maxWhiteBalanceGain: Float { get }
+  var whiteBalanceMode: AVCaptureDevice.WhiteBalanceMode { get set }
+  func isWhiteBalanceModeSupported(_ mode: AVCaptureDevice.WhiteBalanceMode) -> Bool
+  func lockForConfiguration() throws
+  func unlockForConfiguration()
+}
+extension AVCaptureDevice: WhiteBalanceDevice {}
+
+/// Lock a settled white point when supported; leave camera automation alone otherwise.
+/// Exposure stays automatic. Raw gains remain available for later color normalization.
 @MainActor
 final class CameraControl {
   private(set) var whiteBalanceLocked = false
   private(set) var summary: String?
+  private var attempted = false
+  private var lockedDevice: (any WhiteBalanceDevice)?
+  private let whiteBalanceDevice: () -> (any WhiteBalanceDevice)?
   private var device: AVCaptureDevice? { ARWorldTrackingConfiguration.configurableCaptureDeviceForPrimaryCamera }
 
-  /// Call once the session has been running a few seconds (auto white balance settled)
+  init(whiteBalanceDevice: @escaping () -> (any WhiteBalanceDevice)? = {
+    ARWorldTrackingConfiguration.configurableCaptureDeviceForPrimaryCamera
+  }) {
+    self.whiteBalanceDevice = whiteBalanceDevice
+  }
+
+  /// Reject invalid metadata rather than clamping it into a fabricated white point.
+  static func validGains(_ gains: AVCaptureDevice.WhiteBalanceGains, maximum: Float) -> [Float]? {
+    let values = [gains.redGain, gains.greenGain, gains.blueGain]
+    guard maximum.isFinite, maximum >= 1,
+          values.allSatisfy({ $0.isFinite && $0 >= 1 && $0 <= maximum }) else { return nil }
+    return values
+  }
+
+  /// One best-effort attempt per room, after auto white balance has settled.
   func lockWhiteBalance() {
-    guard !whiteBalanceLocked, let d = device, d.isWhiteBalanceModeSupported(.locked) else { return }
+    guard !attempted, !whiteBalanceLocked else { return }
+    attempted = true
+    guard let d = whiteBalanceDevice() else { summary = "white balance device unavailable"; return }
     do {
       try d.lockForConfiguration()
+      defer { d.unlockForConfiguration() }
+      guard d.isWhiteBalanceModeSupported(.locked) else {
+        summary = "white balance lock unsupported"; return
+      }
+      guard let gains = Self.validGains(d.deviceWhiteBalanceGains, maximum: d.maxWhiteBalanceGain) else {
+        summary = "white balance gains unavailable; left unchanged"; return
+      }
       d.whiteBalanceMode = .locked
-      d.unlockForConfiguration()
+      lockedDevice = d
       whiteBalanceLocked = true
-      let g = d.deviceWhiteBalanceGains
-      let tt = d.temperatureAndTintValues(for: g)
-      summary = String(format: "locked at %.0f K tint %.1f (gains %.2f %.2f %.2f)", tt.temperature, tt.tint, g.redGain, g.greenGain, g.blueGain)
+      // Temperature/tint conversion is optional diagnostics, but can raise an Objective-C
+      // exception (not caught by Swift do/catch). Do not invoke it in the capture loop.
+      summary = String(format: "locked (gains %.2f %.2f %.2f)", gains[0], gains[1], gains[2])
     } catch {
       summary = "couldn't lock: \(error.localizedDescription)"
     }
   }
 
-  /// Back to auto (between rooms, so each room gets its own white point)
+  /// Restore only the device we locked, and never write after configuration locking fails.
   func unlock() {
-    guard whiteBalanceLocked, let d = device else { return }
-    try? d.lockForConfiguration()
-    d.whiteBalanceMode = .continuousAutoWhiteBalance
-    d.unlockForConfiguration()
-    whiteBalanceLocked = false
+    attempted = false
+    guard let d = lockedDevice else { return }
+    do {
+      try d.lockForConfiguration()
+      defer { d.unlockForConfiguration() }
+      guard d.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) else {
+        summary = "automatic white balance unsupported; lock retained"; return
+      }
+      d.whiteBalanceMode = .continuousAutoWhiteBalance
+      whiteBalanceLocked = false
+      lockedDevice = nil
+    } catch {
+      summary = "couldn't restore automatic white balance: \(error.localizedDescription)"
+    }
   }
 
   func state(for frame: ARFrame) -> CameraState {
     let d = device
-    let g = d?.deviceWhiteBalanceGains
+    let gains = d.flatMap { Self.validGains($0.deviceWhiteBalanceGains, maximum: $0.maxWhiteBalanceGain) }
     return CameraState(
       iso: d?.iso,
       shutter: d.map { CMTimeGetSeconds($0.exposureDuration) } ?? frame.camera.exposureDuration,
       exposureOffset: frame.camera.exposureOffset,
-      whiteBalance: g.map { [$0.redGain, $0.greenGain, $0.blueGain] },
+      whiteBalance: gains,
       whiteBalanceLocked: whiteBalanceLocked,
       ambientIntensity: frame.lightEstimate.map { Float($0.ambientIntensity) },
       colorTemperature: frame.lightEstimate.map { Float($0.ambientColorTemperature) }
